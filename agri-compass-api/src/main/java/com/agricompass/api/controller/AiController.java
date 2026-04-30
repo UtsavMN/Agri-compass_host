@@ -2,7 +2,6 @@ package com.agricompass.api.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,8 +22,7 @@ public class AiController {
 
     // POST /api/ai/chat
     @PostMapping("/chat")
-    public ResponseEntity<Map<String, String>> chat(@RequestBody Map<String, Object> body,
-                                                     @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Map<String, String>> chat(@RequestBody Map<String, Object> body) {
         String userMessage = (String) body.get("message");
         String[] keys = geminiApiKeysString.split(",");
         RestTemplate restTemplate = new RestTemplate();

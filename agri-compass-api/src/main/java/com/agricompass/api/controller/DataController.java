@@ -51,15 +51,5 @@ public class DataController {
             )
         ));
     }
-
-    // GET /api/crops
-    @GetMapping("/api/crops")
-    public ResponseEntity<List<Map<String, Object>>> getCrops(
-            @RequestParam(required = false, defaultValue = "20") int limit) {
-        return ResponseEntity.ok(List.of(
-            Map.of("id", "1", "name", "Rice", "category", "Cereals", "image_url", "/images/rice.jpg"),
-            Map.of("id", "2", "name", "Wheat", "category", "Cereals", "image_url", "/images/wheat.jpg"),
-            Map.of("id", "3", "name", "Sugarcane", "category", "Cash Crops", "image_url", "/images/sugarcane.jpg")
-        ));
-    }
 }
+

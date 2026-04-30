@@ -8,7 +8,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "profiles")
+@Table(
+    name = "profiles",
+    indexes = {
+        @Index(name = "idx_userprofile_district", columnList = "district")
+    }
+)
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,8 +21,18 @@ import java.time.LocalDateTime;
 public class UserProfile {
 
     @Id
-    // clerk_user_id is the primary key (matches Clerk's user ID)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private User user;
+
+    @Column(name = "district")
+    private String district;
+
+    @Column(columnDefinition = "TEXT")
+    private String preferences; // JSON string
 
     private String username;
 

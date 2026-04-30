@@ -8,18 +8,15 @@ import com.agricompass.api.repository.CommentRepository;
 import com.agricompass.api.repository.PostLikeRepository;
 import com.agricompass.api.repository.PostRepository;
 import com.agricompass.api.repository.UserProfileRepository;
+import com.agricompass.api.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.ArrayList;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -30,6 +27,7 @@ public class PostController {
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
     private final UserProfileRepository profileRepository;
+    private final UserService userService;
 
     // GET /api/posts
     @GetMapping
@@ -39,7 +37,7 @@ public class PostController {
             @RequestParam(required = false) String user,
             @AuthenticationPrincipal Jwt jwt) {
 
-        String currentUserId = "dev-user-id";
+        String currentUserId = jwt != null ? jwt.getSubject() : null;
         List<Post> posts = postRepository.findWithFilters(q, location, user);
 
         List<Map<String, Object>> result = posts.stream().map(post -> {
@@ -48,7 +46,7 @@ public class PostController {
             dto.put("user_id", post.getUserId());
             dto.put("title", post.getTitle());
             dto.put("body", post.getBody());
-            dto.put("content", post.getBody()); // alias for frontend compatibility
+            dto.put("content", post.getBody());
             dto.put("location", post.getLocation());
             
             ObjectMapper mapper = new ObjectMapper();
@@ -64,22 +62,21 @@ public class PostController {
             dto.put("created_at", post.getCreatedAt());
             dto.put("updated_at", post.getUpdatedAt());
 
-            long likeCount = postLikeRepository.countByPostId(post.getId());
-            long commentCount = commentRepository.countByPostId(post.getId());
-            dto.put("_count", Map.of("likes", likeCount, "comments", commentCount));
+            dto.put("_count", Map.of(
+                "likes", postLikeRepository.countByPostId(post.getId()),
+                "comments", commentRepository.countByPostId(post.getId())
+            ));
 
-            boolean isLiked = currentUserId != null &&
-                postLikeRepository.findByPostIdAndUserId(post.getId(), currentUserId).isPresent();
-            dto.put("isLiked", isLiked);
+            dto.put("isLiked", currentUserId != null &&
+                postLikeRepository.findByPostIdAndUserId(post.getId(), currentUserId).isPresent());
 
-            // Fetch author profile
             Optional<UserProfile> profile = profileRepository.findById(post.getUserId());
             dto.put("user", profile.map(p -> Map.of(
                 "id", p.getId(),
                 "username", p.getUsername() != null ? p.getUsername() : "",
                 "full_name", p.getFullName() != null ? p.getFullName() : "",
                 "avatar_url", p.getAvatarUrl() != null ? p.getAvatarUrl() : ""
-            )).orElse(Map.of("id", post.getUserId(), "username", "Unknown")));
+            )).orElse(Map.of("id", post.getUserId(), "username", "Unknown User")));
 
             return dto;
         }).toList();
@@ -91,17 +88,7 @@ public class PostController {
     @PostMapping
     public ResponseEntity<Post> createPost(@RequestBody Map<String, Object> body,
                                            @AuthenticationPrincipal Jwt jwt) {
-        String userId = "dev-user-id";
-
-        // Auto-create profile if not exists
-        profileRepository.findById(userId).orElseGet(() -> {
-            UserProfile profile = UserProfile.builder()
-                .id(userId)
-                .username("Developer")
-                .email("dev@local.host")
-                .build();
-            return profileRepository.save(profile);
-        });
+        String userId = userService.syncUser(jwt).getId();
 
         ObjectMapper mapper = new ObjectMapper();
         String imagesJson = null;
@@ -129,7 +116,7 @@ public class PostController {
         Post post = postRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Post not found"));
 
-        if (!post.getUserId().equals("dev-user-id")) {
+        if (!post.getUserId().equals(jwt.getSubject())) {
             return ResponseEntity.status(403).build();
         }
 
@@ -141,7 +128,7 @@ public class PostController {
     @PostMapping("/{id}/like")
     public ResponseEntity<Map<String, Object>> toggleLike(@PathVariable String id,
                                                            @AuthenticationPrincipal Jwt jwt) {
-        String userId = "dev-user-id";
+        String userId = userService.syncUser(jwt).getId();
         Optional<PostLike> existing = postLikeRepository.findByPostIdAndUserId(id, userId);
 
         boolean liked;
@@ -156,50 +143,24 @@ public class PostController {
             liked = true;
         }
 
-        long likesCount = postLikeRepository.countByPostId(id);
-        return ResponseEntity.ok(Map.of("liked", liked, "likesCount", likesCount));
+        return ResponseEntity.ok(Map.of(
+            "liked", liked,
+            "likesCount", postLikeRepository.countByPostId(id)
+        ));
     }
 
     // POST /api/posts/:id/comments
     @PostMapping("/{id}/comments")
     public ResponseEntity<Comment> addComment(@PathVariable String id,
-                                               @RequestBody Map<String, String> body,
-                                               @AuthenticationPrincipal Jwt jwt) {
-        Post post = postRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Post not found"));
-
+                                              @RequestBody Map<String, String> body,
+                                              @AuthenticationPrincipal Jwt jwt) {
+        String userId = userService.syncUser(jwt).getId();
+        Post post = postRepository.findById(id).orElseThrow();
         Comment comment = Comment.builder()
-            .post(post)
-            .userId("dev-user-id")
-            .content(body.get("content"))
-            .build();
-
+                .post(post)
+                .userId(userId)
+                .content(body.get("content"))
+                .build();
         return ResponseEntity.ok(commentRepository.save(comment));
-    }
-
-    // GET /api/posts/:id/comments
-    @GetMapping("/{id}/comments")
-    public ResponseEntity<List<Map<String, Object>>> getComments(@PathVariable String id) {
-        List<Comment> comments = commentRepository.findByPostIdOrderByCreatedAtAsc(id);
-        List<Map<String, Object>> result = comments.stream().map(comment -> {
-            Map<String, Object> dto = new HashMap<>();
-            dto.put("id", comment.getId());
-            dto.put("post_id", comment.getPost().getId());
-            dto.put("user_id", comment.getUserId());
-            dto.put("content", comment.getContent());
-            dto.put("created_at", comment.getCreatedAt());
-            
-            Optional<UserProfile> profile = profileRepository.findById(comment.getUserId());
-            dto.put("user", profile.map(p -> Map.of(
-                "id", p.getId(),
-                "username", p.getUsername() != null ? p.getUsername() : "",
-                "full_name", p.getFullName() != null ? p.getFullName() : "",
-                "avatar_url", p.getAvatarUrl() != null ? p.getAvatarUrl() : ""
-            )).orElse(Map.of("id", comment.getUserId(), "username", "Unknown")));
-            
-            return dto;
-        }).toList();
-        
-        return ResponseEntity.ok(result);
     }
 }

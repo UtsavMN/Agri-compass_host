@@ -1,43 +1,74 @@
 package com.agricompass.api.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "crops")
+@Table(
+    name = "crops",
+    indexes = {
+        @Index(name = "idx_crop_name", columnList = "name"),
+        @Index(name = "idx_crop_district", columnList = "district")
+    }
+)
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Crop {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    // Basic Info
+    @Column(nullable = false)
     private String name;
 
+    @Column
+    private String district;
+
+    @Column
     private String season;
+
+    // Duration & Economics
+    @Column(name = "duration_days")
     private Integer durationDays;
-    private String waterRequirement;
+
+    @Column(name = "investment_per_acre")
+    private Double investmentPerAcre;
+
+    @Column(name = "expected_returns")
+    private Double expectedReturns;
+
+    @Column(name = "breakeven_months")
+    private Integer breakevenMonths;
+
+    // Environmental Conditions
+    @Column(name = "soil_type")
     private String soilType;
+
+    @Column(name = "rainfall_mm")
+    private String rainfallMm;
+
+    @Column(name = "weather_pattern")
+    private String weatherPattern;
+
+    // ✅ FIXED (Required by your code)
+    @Column(name = "water_requirement")
+    private String waterRequirement;
+
+    @Column(name = "temperature_range")
     private String temperatureRange;
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    // Guidelines (large text)
+    @Column(columnDefinition = "TEXT")
+    private String guidelines;
 
-    public String getSeason() { return season; }
-    public void setSeason(String season) { this.season = season; }
-
-    public Integer getDurationDays() { return durationDays; }
-    public void setDurationDays(Integer durationDays) { this.durationDays = durationDays; }
-
-    public String getWaterRequirement() { return waterRequirement; }
-    public void setWaterRequirement(String waterRequirement) { this.waterRequirement = waterRequirement; }
-
-    public String getSoilType() { return soilType; }
-    public void setSoilType(String soilType) { this.soilType = soilType; }
-
-    public String getTemperatureRange() { return temperatureRange; }
-    public void setTemperatureRange(String temperatureRange) { this.temperatureRange = temperatureRange; }
+    // Image
+    @Column(name = "image_url")
+    private String imageUrl;
 }

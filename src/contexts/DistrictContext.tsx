@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from './AuthContext';
 
 type DistrictContextType = {
   selectedDistrict: string;
   setSelectedDistrict: (district: string) => void;
-  clearDistrict: () => void;
 };
 
 const DistrictContext = createContext<DistrictContextType | undefined>(undefined);
@@ -24,16 +24,39 @@ export function DistrictProvider({ children }: { children: React.ReactNode }) {
     }
   }, [selectedDistrict]);
 
-  const setSelectedDistrict = (district: string) => {
-    setSelectedDistrictState(district);
-  };
+  // Sync with backend profile if authenticated
+  const { user, session } = useAuth();
+  useEffect(() => {
+    const syncDistrict = async () => {
+      if (user && session && selectedDistrict) {
+        try {
+          const token = await session.getToken();
+          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/profiles/${user.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ district: selectedDistrict })
+          });
+        } catch (err) {
+          console.error('Failed to sync district with profile:', err);
+        }
+      }
+    };
+    
+    syncDistrict();
+  }, [selectedDistrict, user, session]);
 
-  const clearDistrict = () => {
-    setSelectedDistrictState('');
+  const setSelectedDistrict = (district: string) => {
+    // Not allowed to re-select once set as per requirements
+    if (!selectedDistrict) {
+      setSelectedDistrictState(district);
+    }
   };
 
   return (
-    <DistrictContext.Provider value={{ selectedDistrict, setSelectedDistrict, clearDistrict }}>
+    <DistrictContext.Provider value={{ selectedDistrict, setSelectedDistrict }}>
       {children}
     </DistrictContext.Provider>
   );

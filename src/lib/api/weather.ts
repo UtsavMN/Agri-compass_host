@@ -1,3 +1,4 @@
+import { apiGet } from '../httpClient'
 import { FarmsAPI } from '@/lib/api/farms'
 import { WeatherAdvisor, WeatherData, WeatherAdvice } from '@/lib/ai/weatherAdvisor'
 import { WeatherCache, NetworkUtils } from '@/lib/cache'
@@ -41,25 +42,8 @@ export class WeatherAPI {
     }
 
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-
-      const response = await NetworkUtils.retryWithBackoff(async () => {
-        const res = await fetch(`/api/weather/${encodeURIComponent(district)}`, {
-          method: 'GET',
-          signal: controller.signal
-        });
-
-        if (!res.ok) {
-          throw new Error(`Weather API error: ${res.status}`);
-        }
-
-        return res;
-      }, 3, 1000);
-
-      clearTimeout(timeoutId)
-
-      const data = await response.json();
+      // Use standard apiGet which handles VITE_API_URL and Auth headers
+      const data = await apiGet(`/api/weather/${encodeURIComponent(district)}`);
 
       // Cache the successful response
       WeatherCache.setWeather(district, data);

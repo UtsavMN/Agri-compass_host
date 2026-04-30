@@ -30,7 +30,8 @@ public class ProfileController {
     public ResponseEntity<UserProfile> updateProfile(@PathVariable String id,
                                                       @RequestBody Map<String, String> body,
                                                       @AuthenticationPrincipal Jwt jwt) {
-        if (!id.equals("dev-user-id")) {
+        // Clerk ID is the subject 'sub'
+        if (!id.equals(jwt.getSubject())) {
             return ResponseEntity.status(403).build();
         }
 

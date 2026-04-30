@@ -7,7 +7,19 @@ async function getAuthHeaders(isFormData = false): Promise<Record<string, string
     headers['Content-Type'] = 'application/json';
   }
 
-  // Development mode: No token required
+  // Get Clerk session token if available
+  try {
+    const clerk = (window as any).Clerk;
+    if (clerk?.session) {
+      const token = await clerk.session.getToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to get auth token:', err);
+  }
+
   return headers;
 }
 
@@ -18,7 +30,8 @@ export async function apiGet(endpoint: string) {
     headers,
   });
   if (!response.ok) {
-    throw new Error(`API GET request failed: ${response.statusText}`);
+    const errorBody = await response.text().catch(() => response.statusText);
+    throw new Error(errorBody || `API GET request failed: ${response.statusText}`);
   }
   return response.json();
 }
@@ -32,7 +45,8 @@ export async function apiPost(endpoint: string, body: any, options?: RequestInit
     ...options
   });
   if (!response.ok) {
-    throw new Error(`API POST request failed: ${response.statusText}`);
+    const errorBody = await response.text().catch(() => response.statusText);
+    throw new Error(errorBody || `API POST request failed: ${response.statusText}`);
   }
   return response.json();
 }
@@ -45,7 +59,8 @@ export async function apiPut(endpoint: string, body: any) {
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    throw new Error(`API PUT request failed: ${response.statusText}`);
+    const errorBody = await response.text().catch(() => response.statusText);
+    throw new Error(errorBody || `API PUT request failed: ${response.statusText}`);
   }
   return response.json();
 }
@@ -57,20 +72,24 @@ export async function apiDelete(endpoint: string) {
     headers,
   });
   if (!response.ok) {
-    throw new Error(`API DELETE request failed: ${response.statusText}`);
+    const errorBody = await response.text().catch(() => response.statusText);
+    throw new Error(errorBody || `API DELETE request failed: ${response.statusText}`);
   }
-  return response.json();
+  // Some DELETE responses may not have a body
+  const text = await response.text();
+  return text ? JSON.parse(text) : {};
 }
 
 export async function apiUpload(endpoint: string, formData: FormData) {
-  const headers = await getAuthHeaders(true); // Omit Content-Type to let browser set boundary automatically
+  const headers = await getAuthHeaders(true);
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'POST',
     headers,
     body: formData,
   });
   if (!response.ok) {
-    throw new Error(`API UPLOAD request failed: ${response.statusText}`);
+    const errorBody = await response.text().catch(() => response.statusText);
+    throw new Error(errorBody || `API UPLOAD request failed: ${response.statusText}`);
   }
   return response.json();
 }

@@ -6,6 +6,7 @@ import com.agricompass.api.entity.WeatherLog;
 import com.agricompass.api.repository.FarmImageRepository;
 import com.agricompass.api.repository.FarmRepository;
 import com.agricompass.api.repository.WeatherLogRepository;
+import com.agricompass.api.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,20 +24,20 @@ public class FarmController {
     private final FarmRepository farmRepository;
     private final WeatherLogRepository weatherLogRepository;
     private final FarmImageRepository farmImageRepository;
+    private final UserService userService;
 
-    // GET /api/farms?userId=xxx
     @GetMapping
     public ResponseEntity<List<Farm>> getFarms(@AuthenticationPrincipal Jwt jwt) {
-        String userId = "dev-user-id";
+        String userId = userService.syncUser(jwt).getId();
         return ResponseEntity.ok(farmRepository.findByUserId(userId));
     }
 
-    // POST /api/farms
     @PostMapping
     public ResponseEntity<Farm> createFarm(@RequestBody Map<String, Object> body,
                                            @AuthenticationPrincipal Jwt jwt) {
+        String userId = userService.syncUser(jwt).getId();
         Farm farm = Farm.builder()
-            .userId("dev-user-id")
+            .userId(userId)
             .name((String) body.get("name"))
             .location((String) body.get("location"))
             .areaAcres(body.get("area_acres") != null ? Double.parseDouble(body.get("area_acres").toString()) : null)
@@ -46,42 +47,44 @@ public class FarmController {
         return ResponseEntity.ok(farmRepository.save(farm));
     }
 
-    // GET /api/farms/:id
     @GetMapping("/{id}")
     public ResponseEntity<Farm> getFarm(@PathVariable String id,
                                         @AuthenticationPrincipal Jwt jwt) {
         Farm farm = farmRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Farm not found"));
-        if (!farm.getUserId().equals("dev-user-id")) {
+        if (!farm.getUserId().equals(jwt.getSubject())) {
             return ResponseEntity.status(403).build();
         }
         return ResponseEntity.ok(farm);
     }
 
-    // DELETE /api/farms/:id
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFarm(@PathVariable String id,
                                            @AuthenticationPrincipal Jwt jwt) {
         Farm farm = farmRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Farm not found"));
-        if (!farm.getUserId().equals("dev-user-id")) {
+        if (!farm.getUserId().equals(jwt.getSubject())) {
             return ResponseEntity.status(403).build();
         }
         farmRepository.delete(farm);
         return ResponseEntity.noContent().build();
     }
 
-    // POST /api/farms/:id/weather
     @PostMapping("/{id}/weather")
     public ResponseEntity<WeatherLog> addWeatherLog(@PathVariable String id,
                                                      @RequestBody Map<String, Object> body,
                                                      @AuthenticationPrincipal Jwt jwt) {
+        String userId = userService.syncUser(jwt).getId();
         Farm farm = farmRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Farm not found"));
 
+        if (!farm.getUserId().equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
+
         WeatherLog log = WeatherLog.builder()
             .farm(farm)
-            .userId("dev-user-id")
+            .userId(userId)
             .notes((String) body.get("notes"))
             .conditions((String) body.get("conditions"))
             .temperature(body.get("temperature") != null ? Double.parseDouble(body.get("temperature").toString()) : null)
@@ -91,23 +94,26 @@ public class FarmController {
         return ResponseEntity.ok(weatherLogRepository.save(log));
     }
 
-    // GET /api/farms/:id/weather
     @GetMapping("/{id}/weather")
     public ResponseEntity<List<WeatherLog>> getWeatherLogs(@PathVariable String id) {
         return ResponseEntity.ok(weatherLogRepository.findByFarmIdOrderByCreatedAtDesc(id));
     }
 
-    // POST /api/farms/:id/images
     @PostMapping("/{id}/images")
     public ResponseEntity<FarmImage> addImage(@PathVariable String id,
                                                @RequestBody Map<String, String> body,
                                                @AuthenticationPrincipal Jwt jwt) {
+        String userId = userService.syncUser(jwt).getId();
         Farm farm = farmRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Farm not found"));
 
+        if (!farm.getUserId().equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
+
         FarmImage image = FarmImage.builder()
             .farm(farm)
-            .userId("dev-user-id")
+            .userId(userId)
             .imageUrl(body.get("image_url"))
             .caption(body.get("caption"))
             .build();
@@ -115,17 +121,14 @@ public class FarmController {
         return ResponseEntity.ok(farmImageRepository.save(image));
     }
 
-    // GET /api/farms/:id/images
     @GetMapping("/{id}/images")
     public ResponseEntity<List<FarmImage>> getImages(@PathVariable String id) {
         return ResponseEntity.ok(farmImageRepository.findByFarmIdOrderByCreatedAtDesc(id));
     }
 
-    // POST /api/farms/:id/share
     @PostMapping("/{id}/share")
     public ResponseEntity<Map<String, String>> shareToCommunity(@PathVariable String id,
                                                                  @RequestBody Map<String, String> body) {
-        // TODO: Create a community post linked to this farm
         return ResponseEntity.ok(Map.of("status", "shared", "farmId", id));
     }
 }

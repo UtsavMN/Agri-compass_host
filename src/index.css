@@ -4,6 +4,29 @@
 @tailwind utilities;
 
 /* ============================================ */
+/* CLERK AUTH & FORM INPUT TEXT COLOR FIXES     */
+/* ============================================ */
+.cl-formFieldInput,
+.cl-input,
+.clerk-auth-container input,
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  color: #1a1a1a !important;
+  -webkit-text-fill-color: #1a1a1a !important;
+}
+
+.dark .cl-formFieldInput,
+.dark .cl-input,
+.dark .clerk-auth-container input,
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"] {
+  color: #f5f5f5 !important;
+  -webkit-text-fill-color: #f5f5f5 !important;
+}
+
+/* ============================================ */
 /* THEME VARIABLES & DARK MODE SUPPORT */
 /* ============================================ */
 

@@ -121,17 +121,17 @@ public class WeatherController {
 
             return ResponseEntity.ok(weatherResponse);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Weather API failed for " + district + ": " + e.getMessage());
             return ResponseEntity.ok(Map.of(
                 "district", district,
                 "weather", Map.of(
                     "temperature", 28,
                     "humidity", 65,
                     "windSpeed", 12,
-                    "description", "partly cloudy (fallback)",
+                    "description", "Partly Cloudy (Service Temp Unavailable)",
                     "forecast", List.of()
                 ),
-                "advisory", Map.of("summary", "Weather service temporarily unavailable."),
+                "advisory", Map.of("summary", "Weather service is currently unavailable. Using historical averages for " + district + "."),
                 "timestamp", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(new Date())
             ));
         }

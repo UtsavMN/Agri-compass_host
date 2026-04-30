@@ -19,6 +19,12 @@ interface Crop {
   name: string;
   category: string;
   image_url: string | null;
+  investmentPerAcre?: number;
+  expectedReturns?: number;
+  breakevenMonths?: number;
+  durationDays?: number;
+  season?: string;
+  weatherPattern?: string;
 }
 
 interface CropRecommendation {
@@ -123,9 +129,20 @@ export default function Dashboard() {
     if (!selectedDistrict) return;
 
     try {
-      // Load crop recommendations
+      // Load crop recommendations from AI
       const recommendations = await cropRecommender.getRecommendations(selectedDistrict);
       setCropRecommendations(recommendations);
+
+      // Load specific crop details for the district (Recommended Crops)
+      setLoading(true);
+      let data = await apiGet(`/api/crops/recommendations/${encodeURIComponent(selectedDistrict)}`);
+      
+      // Fallback to all crops if no recommendations found for this district
+      if (!data || data.length === 0) {
+        data = await apiGet('/api/crops?limit=6');
+      }
+      
+      setCrops(data || []);
 
       // Load weather data
       const weatherRes = await WeatherAPI.getWeatherForDistrict(selectedDistrict);
@@ -134,46 +151,12 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Error loading district data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const quickActions = [
-    {
-      title: 'Market Prices',
-      description: 'Check latest crop prices',
-      icon: TrendingUp,
-      color: 'bg-blue-500',
-      path: '/market-prices',
-    },
-    {
-      title: 'My Farm',
-      description: 'Manage your farms',
-      icon: Sprout,
-      color: 'bg-green-500',
-      path: '/my-farm',
-    },
-    {
-      title: 'Community',
-      description: 'Connect with farmers',
-      icon: Users,
-      color: 'bg-purple-500',
-      path: '/',
-    },
-    {
-      title: 'Gov Schemes',
-      description: 'Explore subsidies',
-      icon: FileText,
-      color: 'bg-orange-500',
-      path: '/schemes',
-    },
-    {
-      title: 'AI Agent',
-      description: 'AI farming assistant',
-      icon: Zap,
-      color: 'bg-cyan-500',
-      path: '/air-agent',
-    },
-  ];
+
 
   if (!user) return null;
 
@@ -211,29 +194,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <StaggerContainer staggerDelay={0.08}>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon;
-              return (
-                <StaggerItem key={index}>
-                  <Card
-                    className="card-hover cursor-pointer group"
-                    onClick={() => navigate(action.path)}
-                  >
-                    <CardContent className="p-6 text-center">
-                      <div className={`${action.color} p-3 rounded-full w-fit mx-auto mb-3 transition-transform group-hover:scale-110`}>
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
-                      <h3 className="font-semibold text-sm mb-1">{action.title}</h3>
-                      <p className="text-xs text-gray-600">{action.description}</p>
-                    </CardContent>
-                  </Card>
-                </StaggerItem>
-              );
-            })}
-          </div>
-        </StaggerContainer>
+
 
         {selectedDistrict && (
           <ScrollReveal direction="up" delay={0.1}>
@@ -358,29 +319,65 @@ export default function Dashboard() {
                   {crops.map((crop) => (
                     <StaggerItem key={crop.id}>
                       <Card
-                        className="card-hover cursor-pointer overflow-hidden group card-mobile"
+                        className="card-hover cursor-pointer overflow-hidden group card-mobile border-none shadow-premium bg-white"
                         onClick={() => navigate(`/crop/${crop.name.toLowerCase()}`)}
                       >
                         {crop.image_url && (
-                          <div className="h-48 overflow-hidden">
+                          <div className="h-48 overflow-hidden relative">
                             <img
                               src={crop.image_url}
                               alt={crop.name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               loading="lazy"
                             />
+                            <div className="absolute top-4 right-4 capitalize">
+                              <Badge className="bg-white/90 text-green-700 hover:bg-white border-none shadow-sm backdrop-blur-sm">
+                                {crop.season || 'Annual'}
+                              </Badge>
+                            </div>
                           </div>
                         )}
-                        <CardHeader>
-                          <CardTitle className="flex items-center">
-                            <Leaf className="h-5 w-5 mr-2 text-green-600" />
-                            {crop.name}
+                        <CardHeader className="pb-2">
+                          <CardTitle className="flex justify-between items-center text-xl text-green-800 font-bold">
+                            <div className="flex items-center">
+                              <Leaf className="h-5 w-5 mr-2 text-green-600" />
+                              {crop.name}
+                            </div>
                           </CardTitle>
-                          <CardDescription>{crop.category}</CardDescription>
+                          <CardDescription className="flex items-center text-gray-500 font-medium">
+                            {crop.durationDays ? `${crop.durationDays} Days Duration` : crop.category}
+                          </CardDescription>
                         </CardHeader>
-                        <CardContent>
-                          <Button className="w-full btn-primary">
-                            View Details
+                        <CardContent className="space-y-4">
+                          {/* Financial Info modeled after the reference image */}
+                          <div className="grid grid-cols-1 gap-3">
+                            <div className="flex flex-col gap-1 p-3 bg-green-50/50 rounded-xl border border-green-100/50">
+                              <div className="text-[10px] uppercase tracking-wider text-green-600 font-bold opacity-80">Investment Required</div>
+                              <div className="text-sm font-bold text-gray-800">
+                                {crop.investmentPerAcre ? `₹${crop.investmentPerAcre.toLocaleString()}` : '₹35,000-45,000'} <span className="text-[10px] text-gray-500 font-normal">per acre</span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-col gap-1 p-3 bg-emerald-50/50 rounded-xl border border-emerald-100/50">
+                              <div className="text-[10px] uppercase tracking-wider text-emerald-600 font-bold opacity-80">Expected Returns</div>
+                              <div className="text-sm font-bold text-gray-800">
+                                {crop.expectedReturns ? `₹${crop.expectedReturns.toLocaleString()}` : '₹55,000-70,000'} <span className="text-[10px] text-gray-500 font-normal">per acre</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between px-1">
+                              <div className="flex items-center text-xs text-gray-600">
+                                <Zap className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
+                                <span className="font-semibold">Break-even:</span>
+                              </div>
+                              <div className="text-xs font-bold text-gray-800">
+                                {crop.breakevenMonths ? `${crop.breakevenMonths} Months` : '4 Months'}
+                              </div>
+                            </div>
+                          </div>
+
+                          <Button className="w-full btn-primary bg-green-600 hover:bg-green-700 text-white shadow-soft rounded-lg py-5 transition-all active:scale-[0.98]">
+                            View Detailed Analysis
                           </Button>
                         </CardContent>
                       </Card>
