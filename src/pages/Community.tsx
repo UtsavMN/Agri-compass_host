@@ -15,8 +15,9 @@ import { useToast } from '@/hooks/use-toast'
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/animations'
 import { LottieEmptyState } from '@/components/ui/lottie-loading'
 import { PostListSkeleton } from '@/components/ui/post-skeleton'
-import { Plus, ImagePlus, Video } from 'lucide-react'
+import { Plus, ImagePlus, Video, Search, Calendar, MapPin, X, Activity, Filter } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
+import { Badge } from '@/components/ui/badge'
 
 export default function Community() {
   const { user } = useAuth()
@@ -34,6 +35,7 @@ export default function Community() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [filterDate, setFilterDate] = useState('')
   const [suggestionsOpen, setSuggestionsOpen] = useState(false)
+  const [showOnlyLocal, setShowOnlyLocal] = useState(true)
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
@@ -56,10 +58,10 @@ export default function Community() {
       setPosts(data)
     } catch (error) {
       console.error('Error fetching posts:', error)
-      const msg = (error as Record<string, unknown>)?.message as string ?? String(error)
+      const msg = (error as any)?.message ?? String(error)
       toast({
-        title: 'Error fetching posts',
-        description: msg || 'Please try again later',
+        title: 'Registry Sync Error',
+        description: msg || 'Could not connect to community data stream.',
         variant: 'destructive'
       })
     } finally {
@@ -75,17 +77,15 @@ export default function Community() {
     return () => window.clearTimeout(timer)
   }, [searchQuery])
 
-  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
   const highlightMatch = (text: string, query: string, caseSensitive = false) => {
     if (!query.trim()) return text
-
     const regex = new RegExp(`(${escapeRegExp(query)})`, caseSensitive ? '' : 'i')
     const parts = text.split(regex)
-
     return parts.map((part, index) =>
       regex.test(part) ? (
-        <mark key={index} className="bg-leaf-200 text-leaf-900 font-semibold">
+        <mark key={index} className="bg-gold-400 text-earth-main font-bold px-0.5 rounded">
           {part}
         </mark>
       ) : (
@@ -94,98 +94,42 @@ export default function Community() {
     )
   }
 
-  const filterByDate = (post: Post) => {
-    if (!filterDate) return true
-    const postDate = new Date(post.created_at)
-    return postDate.toISOString().slice(0, 10) === filterDate
-  }
-
-  const suggestedAccounts = useMemo(() => {
-    if (!debouncedQuery) return []
-
-    const results = posts.filter(post => post.user.username.includes(debouncedQuery))
-    const uniqueUsers = new Map<string, Post>()
-    results.forEach(post => {
-      if (!uniqueUsers.has(post.user.username)) {
-        uniqueUsers.set(post.user.username, post)
-      }
-    })
-
-    return Array.from(uniqueUsers.values()).slice(0, 5)
-  }, [posts, debouncedQuery])
-
-  const suggestedPosts = useMemo(() => {
-    if (!debouncedQuery) return []
-    const query = debouncedQuery.toLowerCase()
-
-    return posts
-      .filter(post => filterByDate(post))
-      .filter(post => (post.body || post.content || '').toLowerCase().includes(query))
-      .slice(0, 5)
-  }, [posts, debouncedQuery, filterDate])
-
   const filteredPosts = useMemo(() => {
     const query = debouncedQuery.toLowerCase()
-
     return posts
       .filter(post => {
-        if (selectedDistrict) {
+        if (showOnlyLocal && selectedDistrict) {
           return post.location?.toLowerCase().includes(selectedDistrict.toLowerCase())
         }
         return true
       })
       .filter(post => {
         if (!query) return true
-        return (post.body || post.content || '').toLowerCase().includes(query)
+        return (post.body || post.content || '').toLowerCase().includes(query) || 
+               (post.user.username || '').toLowerCase().includes(query)
       })
-      .filter(filterByDate)
-  }, [posts, selectedDistrict, debouncedQuery, filterDate])
-
-  const handleSelectAccount = (username: string) => {
-    setSearchQuery('')
-    setSuggestionsOpen(false)
-    navigate('/profile')
-  }
-
-  const handleSelectPost = (postId: string) => {
-    setSearchQuery('')
-    setSuggestionsOpen(false)
-    navigate(`/post/${postId}`)
-  }
-
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value)
-    setSuggestionsOpen(true)
-  }
-
-  const handleDateChange = (value: string) => {
-    setFilterDate(value)
-    setSuggestionsOpen(true)
-  }
-
-  const currentDistrictBanner = selectedDistrict
-    ? `Showing community posts for ${selectedDistrict}`
-    : 'No district selected globally. Choose a district in Weather or Dashboard to auto-apply filters.'
-
-  const showSuggestions = suggestionsOpen && Boolean(debouncedQuery)
+      .filter(post => {
+        if (!filterDate) return true
+        const postDate = new Date(post.created_at)
+        return postDate.toISOString().slice(0, 10) === filterDate
+      })
+  }, [posts, selectedDistrict, debouncedQuery, filterDate, showOnlyLocal])
 
   const handleCreatePost = async () => {
     if (!newPostContent.trim() && mediaFiles.length === 0) return
-
     setIsLoading(true)
     try {
-      // Upload media files if any
       const mediaUrls: string[] = []
       if (mediaFiles.length > 0) {
-        toast({ title: 'Uploading media...' })
+        toast({ title: 'Encrypting Media Stream...' })
         const urls = await UploadAPI.uploadMultipleMedia(mediaFiles, 'posts')
         mediaUrls.push(...urls)
       }
 
-      // Create post
       await PostsAPI.createPost({
         user_id: user?.id || '',
         body: newPostContent,
+        location: selectedDistrict || '',
         images: mediaUrls,
       })
 
@@ -194,15 +138,14 @@ export default function Community() {
       setIsCreatingPost(false)
       fetchPosts()
       toast({
-        title: 'Post created successfully',
-        description: 'Your post is now visible to the community'
+        title: 'Broadcast Transmitted',
+        description: 'Your insights are now visible in the community feed.'
       })
     } catch (error) {
       console.error('Error creating post:', error)
-      const msg = (error as Record<string, unknown>)?.message as string ?? String(error)
       toast({
-        title: 'Error creating post',
-        description: msg || 'Please try again later',
+        title: 'Transmission Failed',
+        description: 'The community relay is temporarily unavailable.',
         variant: 'destructive'
       })
     } finally {
@@ -217,12 +160,6 @@ export default function Community() {
       fetchPosts()
     } catch (error) {
       console.error('Error toggling like:', error)
-      const msg = (error as Record<string, unknown>)?.message as string ?? String(error)
-      toast({
-        title: 'Error',
-        description: msg || 'Could not like/unlike the post',
-        variant: 'destructive'
-      })
     }
   }
 
@@ -230,20 +167,10 @@ export default function Community() {
     if (!user?.id) return;
     try {
       await PostsAPI.addComment(postId, user.id, content);
-
       fetchPosts()
-      toast({
-        title: 'Comment added',
-        description: 'Your comment has been posted'
-      })
+      toast({ title: 'Response Synchronized' })
     } catch (error) {
       console.error('Error adding comment:', error)
-      const msg = (error as Record<string, unknown>)?.message as string ?? String(error)
-      toast({
-        title: 'Error',
-        description: msg || 'Could not add your comment',
-        variant: 'destructive'
-      })
     }
   }
 
@@ -251,199 +178,178 @@ export default function Community() {
     try {
       await PostsAPI.deletePost(postId)
       fetchPosts()
-      toast({
-        title: 'Post deleted',
-        description: 'Your post has been removed'
-      })
+      toast({ title: 'Broadcast Terminated' })
     } catch (error) {
       console.error('Error deleting post:', error)
-      const msg = (error as Record<string, unknown>)?.message as string ?? String(error)
-      toast({
-        title: 'Error',
-        description: msg || 'Could not delete the post',
-        variant: 'destructive'
-      })
     }
   }
 
   return (
     <Layout>
-      <div className="container mx-auto py-8 relative">
-        <Card className="mb-8 community-gradient">
-          <div className="p-4">
-            <Button
-              onClick={() => setIsCreatingPost(true)}
-              className="w-full flex items-center gap-2 dark:bg-black dark:hover:bg-black/80 dark:text-white border dark:border-slate-800 transition"
-            >
-              <Plus className="h-4 w-4" />
-              Create a new post
-            </Button>
+      <div className="mx-auto py-12 space-y-12 max-w-4xl">
+        <ScrollReveal direction="up" delay={0.1}>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+             <div>
+                <h1 className="text-4xl font-black text-gold-100 tracking-tight uppercase">Community Relays</h1>
+                <p className="text-gold-100/40 text-xs font-bold uppercase tracking-[0.3em] mt-2">Open Agricultural Data Exchange</p>
+             </div>
+             <Button
+               onClick={() => setIsCreatingPost(true)}
+               className="btn-gold h-14 px-10 shadow-gold-glow group"
+             >
+               <Plus className="h-5 w-5 mr-3 group-hover:rotate-90 transition-transform duration-300" />
+               Initialize Broadcast
+             </Button>
           </div>
-        </Card>
+        </ScrollReveal>
 
-        <Card className="mb-6 p-4 community-gradient">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-foreground dark:text-slate-200">Community search</label>
-              <Input
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Search usernames (case-sensitive) or post keywords"
-                className="mt-2 dark:bg-black dark:text-white dark:border-slate-700 dark:placeholder:text-slate-400"
-              />
+        <ScrollReveal direction="up" delay={0.2}>
+          <Card className="card-premium p-1 border-none shadow-premium bg-earth-elevated/20">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-1">
+              <div className="md:col-span-7 relative">
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-gold-400/40" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setSuggestionsOpen(true)
+                  }}
+                  placeholder="FILTER BY KEYWORDS, USERS, OR CROPS..."
+                  className="bg-transparent border-none text-gold-100 h-16 rounded-none pl-14 pr-10 text-[10px] font-black uppercase tracking-widest placeholder:text-gold-100/10 focus:ring-0"
+                />
+                {searchQuery && (
+                   <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gold-100/20 hover:text-gold-400">
+                      <X size={14} />
+                   </button>
+                )}
+              </div>
+              <div className="md:col-span-3 border-t md:border-t-0 md:border-l border-earth-border/50 relative">
+                 <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-gold-400/40" />
+                 <Input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="bg-transparent border-none text-gold-100 h-16 rounded-none pl-14 text-[10px] font-black uppercase tracking-widest focus:ring-0 [color-scheme:dark]"
+                />
+              </div>
+              <div className="md:col-span-2 border-t md:border-t-0 md:border-l border-earth-border/50 flex items-center justify-center bg-gold-400/5">
+                 <button 
+                  onClick={() => setShowOnlyLocal(!showOnlyLocal)}
+                  className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${showOnlyLocal && selectedDistrict ? 'text-gold-400' : 'text-gold-100/20 hover:text-gold-100/40'}`}
+                 >
+                    <Filter size={12} /> {showOnlyLocal ? 'Local' : 'Global'}
+                 </button>
+              </div>
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-foreground dark:text-slate-200">Date filter (DD/MM/YYYY)</label>
-              <Input
-                type="date"
-                value={filterDate}
-                onChange={(e) => handleDateChange(e.target.value)}
-                className="mt-2 dark:bg-black dark:text-white dark:border-slate-700 [color-scheme:light_dark]"
-              />
-            </div>
-          </div>
-
-          <p className="text-sm text-foreground/80 dark:text-slate-300 mt-3">{currentDistrictBanner}</p>
-
-          {showSuggestions && (
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-              {suggestedAccounts.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-sm font-semibold text-slate-700">Accounts</p>
-                  <div className="mt-2 space-y-2">
-                    {suggestedAccounts.map((post) => (
-                      <button
-                        key={post.user.username}
-                        type="button"
-                        onClick={() => handleSelectAccount(post.user.username)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-left transition hover:bg-leaf-50"
-                      >
-                        <span className="font-medium text-slate-900">@{highlightMatch(post.user.username, debouncedQuery, true)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {suggestedPosts.length > 0 && (
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">Posts</p>
-                  <div className="mt-2 space-y-2">
-                    {suggestedPosts.map((post) => (
-                      <button
-                        key={post.id}
-                        type="button"
-                        onClick={() => handleSelectPost(post.id)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-left transition hover:bg-leaf-50"
-                      >
-                        <p className="font-medium text-slate-900">
-                          {highlightMatch(post.body || post.content || '', debouncedQuery)}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {suggestedAccounts.length === 0 && suggestedPosts.length === 0 && (
-                <p className="text-sm text-slate-500">No matching accounts or posts found for "{debouncedQuery}".</p>
-              )}
-            </div>
+          </Card>
+          
+          {selectedDistrict && showOnlyLocal && (
+             <div className="flex items-center gap-2 mt-4 px-2">
+                <MapPin size={10} className="text-gold-400" />
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gold-100/30">Relay Restricted to district: <span className="text-gold-400">{selectedDistrict}</span></span>
+             </div>
           )}
-        </Card>
+        </ScrollReveal>
 
         <Dialog open={isCreatingPost} onOpenChange={setIsCreatingPost}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Create a new post</DialogTitle>
+          <DialogContent className="bg-earth-elevated border-earth-border text-gold-100 sm:max-w-[500px] p-0 overflow-hidden shadow-2xl">
+            <DialogHeader className="p-8 border-b border-earth-border bg-earth-card">
+              <DialogTitle className="text-2xl font-black tracking-tight text-gold-100 uppercase">Input Broadcast Metadata</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="p-8 space-y-8">
               <Textarea
-                placeholder="What's on your mind?"
+                placeholder="Synchronize your harvest data or agricultural updates..."
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
-                className="min-h-[100px]"
+                className="min-h-[150px] bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 rounded-2xl p-6 text-sm placeholder:text-gold-100/10 italic leading-relaxed"
               />
+              
               <div
                 {...getRootProps()}
-                className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50"
+                className="border border-dashed border-gold-400/20 rounded-[2rem] p-10 text-center cursor-pointer hover:border-gold-400/50 hover:bg-gold-400/5 transition-all group"
               >
                 <input {...getInputProps()} />
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex gap-2">
-                    <ImagePlus className="h-6 w-6" />
-                    <Video className="h-6 w-6" />
+                <div className="flex flex-col items-center gap-4">
+                  <div className="flex gap-6">
+                    <ImagePlus className="h-8 w-8 text-gold-100/20 group-hover:text-gold-400 transition-all" />
+                    <Video className="h-8 w-8 text-gold-100/20 group-hover:text-gold-400 transition-all" />
                   </div>
-                  <p>Drop files here or click to upload</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gold-100/30 group-hover:text-gold-100 transition-colors">Attach Visual Data</p>
                 </div>
               </div>
+
               {mediaFiles.length > 0 && (
-                <div className="grid gap-2">
+                <div className="flex flex-wrap gap-2">
                   {mediaFiles.map((file, index) => (
-                    <div key={index} className="text-sm text-gray-500">
-                      {file.name}
-                    </div>
+                    <Badge key={index} className="bg-gold-400/10 text-gold-400 border border-gold-400/20 py-1.5 px-4 rounded-full text-[9px] font-black uppercase tracking-widest">
+                       {file.name}
+                    </Badge>
                   ))}
                 </div>
               )}
-              <Button onClick={handleCreatePost} disabled={isLoading}>
-                {isLoading ? 'Creating...' : 'Create Post'}
+
+              <Button onClick={handleCreatePost} disabled={isLoading || (!newPostContent.trim() && mediaFiles.length === 0)} className="btn-gold w-full h-16 text-xs font-black uppercase tracking-[0.3em] shadow-gold-glow">
+                {isLoading ? <Activity className="h-5 w-5 animate-spin" /> : 'Transmit Broadcast'}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
 
-        <ScrollReveal direction="up" delay={0.1}>
+        <div className="space-y-8 pb-32">
           {isFetchingPosts ? (
             <PostListSkeleton />
           ) : filteredPosts.length > 0 ? (
-            <StaggerContainer staggerDelay={0.05}>
-              <div className="grid gap-4">
+            <StaggerContainer staggerDelay={0.1}>
+              <div className="space-y-8">
                 {filteredPosts.map((post) => (
                   <StaggerItem key={post.id}>
-                    <div className="card-mobile">
-                      <PostCard
-                            post={{
-                              id: post.id,
-                              content: post.body || post.content || '',
-                              kn_caption: post.kn_caption || undefined,
-                              images: post.images,
-                              video_url: post.video_url ?? undefined,
-                              created_at: post.created_at,
-                              user: post.user,
-                              _count: {
-                                likes: post._count?.likes || 0,
-                                comments: post._count?.comments || 0,
-                              },
-                              isLiked: post.isLiked,
-                            }}
+                     <PostCard
+                        post={{
+                          id: post.id,
+                          content: post.body || post.content || '',
+                          kn_caption: post.kn_caption,
+                          images: post.images,
+                          video_url: post.video_url,
+                          location: post.location,
+                          created_at: post.created_at,
+                          user: post.user,
+                          _count: post._count,
+                          isLiked: post.isLiked,
+                        }}
                         currentUserId={user?.id}
                         onLike={handleLike}
                         onComment={handleComment}
                         onDelete={handleDeletePost}
                         onShare={(postId: string) => {
                           navigator.clipboard.writeText(`${window.location.origin}/post/${postId}`)
+                          toast({ title: 'Relay Identifier Copied' })
                         }}
                       />
-                    </div>
                   </StaggerItem>
                 ))}
               </div>
             </StaggerContainer>
           ) : (
-            <LottieEmptyState message={
-              posts.length === 0
-                ? 'No posts yet. Be the first to share something!'
-                : 'No community posts match your search or selected date.'
-            } />
+            <div className="py-24 text-center">
+               <LottieEmptyState message={
+                posts.length === 0
+                  ? 'COMMUNITY RELAY SILENT. NO BROADCASTS DETECTED.'
+                  : 'NO DATA MATCHES FOUND FOR CURRENT FILTER PARAMETERS.'
+              } />
+              <Button variant="ghost" className="mt-6 text-[10px] font-black uppercase tracking-widest text-gold-400 hover:text-gold-100" onClick={() => {
+                setSearchQuery('')
+                setFilterDate('')
+                setShowOnlyLocal(false)
+              }}>Reset Search Parameters</Button>
+            </div>
           )}
-        </ScrollReveal>
+        </div>
 
-        {/* Floating create post button */}
         <button
           onClick={() => setIsCreatingPost(true)}
-          className="fixed bottom-6 right-6 z-50 bg-green-600 hover:bg-green-700 text-white p-4 rounded-full shadow-xl"
-          aria-label="Create Post"
+          className="fixed bottom-10 right-10 z-50 bg-gradient-to-br from-gold-400 to-gold-600 text-earth-main p-6 rounded-[2.5rem] shadow-gold-glow hover:scale-110 active:scale-95 transition-all lg:hidden"
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-6 w-6" strokeWidth={3} />
         </button>
       </div>
     </Layout>

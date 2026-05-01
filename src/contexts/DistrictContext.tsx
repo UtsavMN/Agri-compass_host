@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { apiPut } from '@/lib/httpClient';
 
 type DistrictContextType = {
   selectedDistrict: string;
@@ -12,8 +13,11 @@ const DISTRICT_STORAGE_KEY = 'agri-compass-selected-district';
 export function DistrictProvider({ children }: { children: React.ReactNode }) {
   const [selectedDistrict, setSelectedDistrictState] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
-    return localStorage.getItem(DISTRICT_STORAGE_KEY) ?? '';
+    const stored = localStorage.getItem(DISTRICT_STORAGE_KEY);
+    return stored ?? '';
   });
+
+  const { user } = useAuth();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -25,34 +29,24 @@ export function DistrictProvider({ children }: { children: React.ReactNode }) {
   }, [selectedDistrict]);
 
   // Sync with backend profile if authenticated
-  const { user, session } = useAuth();
   useEffect(() => {
     const syncDistrict = async () => {
-      if (user && session && selectedDistrict) {
+      if (user?.id && selectedDistrict) {
         try {
-          const token = await session.getToken();
-          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/profiles/${user.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ district: selectedDistrict })
-          });
+          await apiPut(`/api/profiles/${user.id}`, { location: selectedDistrict });
         } catch (err) {
           console.error('Failed to sync district with profile:', err);
         }
       }
     };
     
-    syncDistrict();
-  }, [selectedDistrict, user, session]);
+    if (user?.id) {
+       syncDistrict();
+    }
+  }, [selectedDistrict, user?.id]);
 
   const setSelectedDistrict = (district: string) => {
-    // Not allowed to re-select once set as per requirements
-    if (!selectedDistrict) {
-      setSelectedDistrictState(district);
-    }
+    setSelectedDistrictState(district);
   };
 
   return (

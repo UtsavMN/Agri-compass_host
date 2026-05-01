@@ -57,19 +57,22 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private void seedCrop(String name, String season, int duration, String water, String soil, String temp, double inv, double yld, double price) {
         Optional<Crop> optCrop = cropRepo.findByNameIgnoreCase(name);
-        Crop crop;
-        if (optCrop.isEmpty()) {
-            crop = new Crop();
-            crop.setName(name);
-            crop.setSeason(season);
-            crop.setDurationDays(duration);
-            crop.setWaterRequirement(water);
-            crop.setSoilType(soil);
-            crop.setTemperatureRange(temp);
-            crop = cropRepo.save(crop);
-        } else {
-            crop = optCrop.get();
-        }
+        Crop crop = optCrop.orElseGet(Crop::new);
+        
+        crop.setName(name);
+        crop.setSeason(season);
+        crop.setDurationDays(duration);
+        crop.setWaterRequirement(water);
+        crop.setSoilType(soil);
+        crop.setTemperatureRange(temp);
+        
+        // Fix for missing Dataset info on Dashboard
+        crop.setInvestmentPerAcre(inv);
+        crop.setExpectedReturns(yld * price);
+        crop.setBreakevenMonths(duration > 0 ? (duration / 30 > 0 ? duration / 30 : 1) : 4);
+        crop.setGuidelines("Comprehensive cultivation guidelines for " + name + ":\n- Ensure proper soil preparation.\n- Manage irrigation according to seasonal needs.\n- Apply required fertilizers at correct stages.\n- Monitor for pests and diseases regularly.\n- Transport and market efficiently to maximize profit.");
+
+        crop = cropRepo.save(crop);
 
         Optional<CropEconomics> optEcon = econRepo.findByCropId(crop.getId());
         if (optEcon.isEmpty()) {

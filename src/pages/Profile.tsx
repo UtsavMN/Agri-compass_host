@@ -8,11 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, MapPin, Phone, Globe, Save } from 'lucide-react';
+import { User, Mail, MapPin, Phone, Globe, Save, Shield, LayoutGrid, Clock, MessageSquare, Sprout } from 'lucide-react';
 import ArchitectureMap from '@/components/ArchitectureMap';
+import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/animations';
 
 export default function Profile() {
-  const { user, profile, updateProfile } = useAuth();
+  const { user, profile, updateProfile, switchUser } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(false);
@@ -32,6 +36,14 @@ export default function Profile() {
     likes_count: number;
     comments_count: number;
   }>>([]);
+  const [farms, setFarms] = useState<Array<{
+    id: string;
+    name: string;
+    areaAcres: number;
+    location: string;
+    cropFocus?: string;
+  }>>([]);
+  const [loadingFarms, setLoadingFarms] = useState(false);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 9;
 
@@ -50,15 +62,27 @@ export default function Profile() {
   useEffect(() => {
     if (user?.id) {
       void loadUserPosts(1);
+      void loadUserFarms();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  const loadUserFarms = async () => {
+    setLoadingFarms(true);
+    try {
+      const data = await apiGet(`/api/farms`);
+      setFarms(data || []);
+    } catch (error) {
+      console.error('Failed to load farms', error);
+    } finally {
+      setLoadingFarms(false);
+    }
+  };
 
   const loadUserPosts = async (nextPage: number) => {
     if (!user?.id) return;
     setLoadingPosts(true);
     try {
-      // NOTE: Using the new generic apiget client. The backend must support pagination!
       const data = await apiGet(`/api/posts?userId=${user.id}&page=${nextPage}&limit=${PAGE_SIZE}`);
       
       if (nextPage === 1) setPosts(data || []);
@@ -97,8 +121,9 @@ export default function Profile() {
   if (!user) {
     return (
       <Layout>
-        <div className="text-center py-12">
-          <p className="text-gray-600">Please sign in to view your profile.</p>
+        <div className="text-center py-24">
+          <p className="text-gold-100/40 font-medium italic">Please sign in to view your profile architecture.</p>
+          <Button onClick={() => navigate('/auth')} className="mt-4 btn-gold">Authenticate</Button>
         </div>
       </Layout>
     );
@@ -106,167 +131,232 @@ export default function Profile() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-            My Profile
-          </h1>
-          <p className="text-gray-600 mt-2">Manage your account information</p>
-        </div>
-
-      <Card>
-          <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
-            <CardDescription>Update your profile details</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center">
-                  <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                  Email
-                </Label>
-                <Input id="email" type="email" value={user.email} disabled className="bg-gray-50" />
-                <p className="text-xs text-gray-500">Email cannot be changed</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="username" className="flex items-center">
-                  <User className="h-4 w-4 mr-2 text-gray-500" />
-                  Username
-                </Label>
-                <Input
-                  id="username"
-                  placeholder="johndoe"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="full_name" className="flex items-center">
-                  <User className="h-4 w-4 mr-2 text-gray-500" />
-                  Full Name
-                </Label>
-                <Input
-                  id="full_name"
-                  placeholder="John Doe"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="flex items-center">
-                  <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                  Phone Number
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+91 9876543210"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location" className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                  Location
-                </Label>
-                <Input
-                  id="location"
-                  placeholder="Punjab, India"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="language" className="flex items-center">
-                  <Globe className="h-4 w-4 mr-2 text-gray-500" />
-                  Language Preference
-                </Label>
-                <Select
-                  value={formData.language_preference}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, language_preference: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="hi">Hindi</SelectItem>
-                    <SelectItem value="pa">Punjabi</SelectItem>
-                    <SelectItem value="bn">Bengali</SelectItem>
-                    <SelectItem value="mr">Marathi</SelectItem>
-                    <SelectItem value="ta">Tamil</SelectItem>
-                    <SelectItem value="te">Telugu</SelectItem>
-                    <SelectItem value="gu">Gujarati</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  type="submit"
-                  className="bg-green-600 hover:bg-green-700"
-                  disabled={loading}
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {loading ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Architecture Flowchart</CardTitle>
-          <CardDescription>Explore the technologies powering Agri Compass v2</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ArchitectureMap />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>My Posts</CardTitle>
-          <CardDescription>Your recent community posts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingPosts && posts.length === 0 ? (
-            <div className="text-sm text-gray-500">Loading posts…</div>
-          ) : posts.length === 0 ? (
-            <div className="text-sm text-gray-500">You have not posted yet.</div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {posts.map((p) => (
-                <Card key={p.id} className="border-green-100">
-                  <CardHeader>
-                    <CardTitle className="text-base">{p.title}</CardTitle>
-                    <CardDescription>{new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-700 line-clamp-3 whitespace-pre-wrap">{p.content}</p>
-                    <div className="text-xs text-gray-500 mt-2">{p.category} • {p.likes_count} likes • {p.comments_count} comments</div>
-                  </CardContent>
-                </Card>
-              ))}
+      <div className="max-w-4xl mx-auto space-y-12 pb-12">
+        <ScrollReveal direction="up" delay={0.1}>
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="h-24 w-24 rounded-full bg-gold-400/10 border-4 border-gold-400/20 flex items-center justify-center text-gold-400 shadow-premium">
+               <User className="h-10 w-10" />
             </div>
-          )}
-          <div className="flex justify-center pt-4">
-            <Button variant="outline" onClick={() => loadUserPosts(page + 1)} disabled={loadingPosts}>
-              {loadingPosts ? 'Loading…' : 'Load more'}
-            </Button>
+            <div className="text-center md:text-left">
+              <h1 className="text-4xl font-black text-gold-100 tracking-tight">Account Configuration</h1>
+              <p className="text-gold-100/40 text-sm font-bold uppercase tracking-[0.2em] mt-1">Management Console</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </ScrollReveal>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+           {/* Navigation Sidebar */}
+           <div className="space-y-4">
+              <ScrollReveal direction="left" delay={0.2}>
+                 <Card className="card-premium p-1.5 bg-earth-elevated/50 border-none shadow-premium">
+                    <Button variant="ghost" className="w-full justify-start text-gold-400 bg-gold-400/10 font-bold h-11 rounded-lg">
+                       <User className="h-4 w-4 mr-3" /> Profile Details
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start text-gold-100/40 hover:text-gold-100 h-11 rounded-lg mt-1" onClick={() => navigate('/my-farm')}>
+                       <Sprout className="h-4 w-4 mr-3" /> Farm Registry
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start text-gold-100/40 hover:text-gold-100 h-11 rounded-lg mt-1" onClick={() => navigate('/community')}>
+                       <MessageSquare className="h-4 w-4 mr-3" /> Broadcast History
+                    </Button>
+                 </Card>
+              </ScrollReveal>
+
+              <ScrollReveal direction="left" delay={0.3}>
+                 <Card className="card-premium p-6 border-gold-400/10 bg-gold-400/5">
+                    <CardHeader className="p-0 mb-4">
+                       <CardTitle className="text-xs font-black uppercase tracking-widest text-gold-400 flex items-center">
+                          <Shield className="h-3 w-3 mr-2" /> Identity Switcher
+                       </CardTitle>
+                    </CardHeader>
+                    <div className="space-y-2">
+                       {['dev_user', 'user_a', 'user_b'].map((id) => (
+                          <button
+                             key={id}
+                             onClick={() => switchUser?.(id)}
+                             className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-tighter transition-all border ${
+                                user.id === id 
+                                ? 'bg-gold-400 text-earth-main border-gold-400' 
+                                : 'bg-earth-main text-gold-100/40 border-earth-border hover:border-gold-400/30'
+                             }`}
+                          >
+                             {id.replace('_', ' ')}
+                          </button>
+                       ))}
+                    </div>
+                 </Card>
+              </ScrollReveal>
+           </div>
+
+           {/* Main Content Areas */}
+           <div className="lg:col-span-2 space-y-8">
+              <ScrollReveal direction="up" delay={0.4}>
+                 <Card className="card-premium">
+                    <CardHeader className="border-b border-earth-border/50">
+                       <CardTitle className="text-gold-100 font-black tracking-tight flex items-center">
+                          <LayoutGrid className="h-5 w-5 mr-3 text-gold-400" /> Personal Metadata
+                       </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-8">
+                       <form onSubmit={handleSubmit} className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Primary Email</Label>
+                                <div className="flex items-center gap-3 bg-earth-main/50 p-3 rounded-xl border border-earth-border text-gold-100/30 text-sm">
+                                   <Mail size={14} /> {user.email}
+                                </div>
+                             </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="username" className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Username Handle</Label>
+                                <Input
+                                  id="username"
+                                  value={formData.username}
+                                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                  className="bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 h-11 rounded-xl"
+                                />
+                             </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div className="space-y-2">
+                                <Label htmlFor="full_name" className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Legal Full Name</Label>
+                                <Input
+                                  id="full_name"
+                                  value={formData.full_name}
+                                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                                  className="bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 h-11 rounded-xl"
+                                />
+                             </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="phone" className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Telecom Interface</Label>
+                                <Input
+                                  id="phone"
+                                  placeholder="+91 0000000000"
+                                  value={formData.phone}
+                                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                  className="bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 h-11 rounded-xl"
+                                />
+                             </div>
+                          </div>
+
+                          <div className="space-y-2">
+                             <Label htmlFor="location" className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Operational Base (District)</Label>
+                             <Input
+                               id="location"
+                               value={formData.location}
+                               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                               className="bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 h-11 rounded-xl"
+                             />
+                          </div>
+
+                          <div className="space-y-2">
+                             <Label className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Linguistic Protocol</Label>
+                             <Select
+                               value={formData.language_preference}
+                               onValueChange={(value) => setFormData({ ...formData, language_preference: value })}
+                             >
+                               <SelectTrigger className="bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 h-11 rounded-xl">
+                                 <SelectValue />
+                               </SelectTrigger>
+                               <SelectContent className="bg-earth-elevated border-earth-border">
+                                 {['en', 'kn', 'hi', 'pa', 'bn', 'mr', 'ta', 'te', 'gu'].map((lang) => (
+                                    <SelectItem key={lang} value={lang} className="text-gold-100 uppercase text-xs font-bold">{lang === 'en' ? 'English' : lang === 'kn' ? 'Kannada' : lang}</SelectItem>
+                                 ))}
+                               </SelectContent>
+                             </Select>
+                          </div>
+
+                          <Button type="submit" disabled={loading} className="btn-gold w-full h-12 shadow-gold-glow">
+                             {loading ? 'Synchronizing...' : 'Commit Changes'}
+                          </Button>
+                       </form>
+                    </CardContent>
+                 </Card>
+              </ScrollReveal>
+
+              <ScrollReveal direction="up" delay={0.5}>
+                 <Card className="card-premium">
+                    <CardHeader className="border-b border-earth-border/50">
+                       <CardTitle className="text-gold-100 font-black tracking-tight flex items-center">
+                          <Sprout className="h-5 w-5 mr-3 text-gold-400" /> Regional Assets (Farms)
+                       </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                       {loadingFarms ? (
+                          <div className="p-4 animate-pulse bg-earth-elevated/50 rounded-xl border border-earth-border"></div>
+                       ) : farms.length === 0 ? (
+                          <div className="text-center py-8">
+                             <p className="text-xs text-gold-100/40 italic mb-4">No registered land assets detected.</p>
+                             <Button variant="outline" className="border-gold-400/20 text-gold-400 hover:bg-gold-400/5" onClick={() => navigate('/my-farm')}>Initialize Farm</Button>
+                          </div>
+                       ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             {farms.map((farm) => (
+                                <div key={farm.id} className="p-4 bg-earth-elevated rounded-2xl border border-earth-border hover:border-gold-400/30 transition-all cursor-pointer group" onClick={() => navigate('/my-farm')}>
+                                   <div className="flex justify-between items-start mb-2">
+                                      <h4 className="font-black text-gold-100 group-hover:text-gold-400 transition-colors uppercase tracking-tight text-sm">{farm.name}</h4>
+                                      <MapPin size={12} className="text-gold-400/40" />
+                                   </div>
+                                   <div className="flex items-center gap-3">
+                                      <Badge className="bg-gold-400/10 text-gold-400 border-none text-[10px]">{farm.areaAcres || 0} Acres</Badge>
+                                      <span className="text-[10px] text-gold-100/40 font-bold uppercase tracking-tighter">{farm.location}</span>
+                                   </div>
+                                </div>
+                             ))}
+                          </div>
+                       )}
+                    </CardContent>
+                 </Card>
+              </ScrollReveal>
+
+              <ScrollReveal direction="up" delay={0.6}>
+                 <Card className="card-premium">
+                    <CardHeader className="border-b border-earth-border/50">
+                       <CardTitle className="text-gold-100 font-black tracking-tight flex items-center">
+                          <Clock className="h-5 w-5 mr-3 text-gold-400" /> Interaction Log (Broadcasts)
+                       </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                       {loadingPosts && posts.length === 0 ? (
+                          <div className="p-4 animate-pulse bg-earth-elevated/50 rounded-xl border border-earth-border"></div>
+                       ) : posts.length === 0 ? (
+                          <p className="text-center py-8 text-xs text-gold-100/40 italic">No broadcast activity recorded.</p>
+                       ) : (
+                          <div className="space-y-4">
+                             {posts.map((p) => (
+                                <div key={p.id} className="p-4 bg-earth-elevated rounded-2xl border border-earth-border hover:border-gold-400/30 transition-all group cursor-pointer" onClick={() => navigate(`/post/${p.id}`)}>
+                                   <div className="flex justify-between items-center mb-2">
+                                      <h4 className="text-xs font-black text-gold-100 uppercase tracking-widest">{p.category || 'General'}</h4>
+                                      <span className="text-[10px] text-gold-100/30 font-bold">{new Date(p.created_at).toLocaleDateString()}</span>
+                                   </div>
+                                   <p className="text-sm text-gold-100/60 group-hover:text-gold-100 transition-colors line-clamp-2 leading-relaxed italic">"{p.content}"</p>
+                                   <div className="mt-3 flex items-center gap-4 text-[10px] font-black text-gold-400/40 uppercase tracking-tighter">
+                                      <span>{p.likes_count} Reactions</span>
+                                      <span>{p.comments_count} Transmissions</span>
+                                   </div>
+                                </div>
+                             ))}
+                             <Button variant="ghost" className="w-full text-gold-400 hover:bg-gold-400/5 text-[10px] font-black uppercase tracking-[0.2em]" onClick={() => loadUserPosts(page + 1)} disabled={loadingPosts}>
+                                {loadingPosts ? 'Retrieving...' : 'Fetch More Data'}
+                             </Button>
+                          </div>
+                       )}
+                    </CardContent>
+                 </Card>
+              </ScrollReveal>
+
+              <ScrollReveal direction="up" delay={0.7}>
+                 <Card className="card-premium overflow-hidden border-none shadow-premium bg-earth-elevated/20">
+                    <CardHeader className="bg-earth-elevated border-b border-earth-border p-6">
+                       <CardTitle className="text-xl font-black text-gold-100 tracking-tight">System Architecture</CardTitle>
+                       <CardDescription className="text-gold-100/40 font-medium">Technology stack powering the Agri Compass ecosystem</CardDescription>
+                    </CardHeader>
+                    <div className="p-6 opacity-80 grayscale hover:grayscale-0 transition-all duration-700">
+                       <ArchitectureMap />
+                    </div>
+                 </Card>
+              </ScrollReveal>
+           </div>
+        </div>
       </div>
     </Layout>
   );

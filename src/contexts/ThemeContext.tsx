@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'dark';
 
 interface ThemeContextType {
   theme: Theme;
@@ -11,36 +11,10 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    // Check localStorage first
-    const stored = localStorage.getItem('theme');
-    if (stored === 'light' || stored === 'dark') {
-      return stored;
-    }
-    // Check system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
-  useEffect(() => {
-    const root = window.document.documentElement;
-
-    // Remove previous theme classes
-    root.classList.remove('light', 'dark');
-
-    // Add current theme class
-    root.classList.add(theme);
-
-    // Store in localStorage
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setThemeState(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-  };
+  // Earthy Minimal Premium — permanently dark
+  const theme: Theme = 'dark';
+  const toggleTheme = () => {};
+  const setTheme = () => {};
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>

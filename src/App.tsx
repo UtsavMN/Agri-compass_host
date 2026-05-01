@@ -4,7 +4,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { DistrictProvider } from '@/contexts/DistrictContext';
 import { Toaster } from '@/components/ui/toaster';
-import Auth from '@/pages/Auth';
+
 import Dashboard from '@/pages/Dashboard';
 import CropDetails from '@/pages/CropDetails';
 import MyFarm from '@/pages/MyFarm';
@@ -26,7 +26,7 @@ function App() {
               <Router>
                 <Routes>
                 <Route path="/" element={<Community />} />
-                <Route path="/auth" element={<Auth />} />
+
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/crop/:cropName" element={<CropDetails />} />
                 <Route path="/my-farm" element={<MyFarm />} />

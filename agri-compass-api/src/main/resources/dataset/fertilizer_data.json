@@ -1,0 +1,229 @@
+{
+  "rice": {
+    "soil_requirements": {
+      "ph_range": "5.5-7.5",
+      "organic_carbon": "Medium to High"
+    },
+    "nutrient_requirement_per_acre": {
+      "nitrogen_kg": 40,
+      "phosphorus_kg": 20,
+      "potassium_kg": 20
+    },
+    "growing_steps": [
+      {
+        "step_number": 1,
+        "title": "Seed Selection & Treatment",
+        "details": "Use high-germination, plump seeds. Soak seeds in a solution of fungicides (e.g., Carbendazim) for 24 hours to prevent seed-borne diseases."
+      },
+      {
+        "step_number": 2,
+        "title": "Nursery Preparation",
+        "details": "Sow the treated seeds in a well-prepared nursery bed. Maintain adequate moisture and apply light nitrogen if seedlings appear pale."
+      },
+      {
+        "step_number": 3,
+        "title": "Land Preparation (Puddling)",
+        "details": "Plough the main field and flood it. Puddle the soil to create a slurry of mud and water, which reduces water percolation and weed growth."
+      },
+      {
+        "step_number": 4,
+        "title": "Transplanting",
+        "details": "Transplant 20-25 days old seedlings into the puddled field. Maintain a spacing of 20x10 cm or 20x15 cm for optimal plant density."
+      },
+      {
+        "step_number": 5,
+        "title": "Water Management",
+        "details": "Keep the field flooded with 2-5 cm of water during the early vegetative stage. Implement Alternate Wetting and Drying (AWD) to save water without yield loss."
+      },
+      {
+        "step_number": 6,
+        "title": "Weed & Pest Management",
+        "details": "Perform periodic manual weeding or use mechanical cono-weeders. Monitor for stem borers and blast disease; apply recommended IPM practices."
+      },
+      {
+        "step_number": 7,
+        "title": "Harvesting",
+        "details": "Harvest when 80% of the panicles turn straw-colored and the grain moisture drops to around 20%. Thresh and dry grains to 14% moisture for storage."
+      }
+    ],
+    "fertilizer_schedule": [
+      {
+        "stage": "Basal",
+        "days_after_sowing": 0,
+        "application": {
+          "urea_kg": 20,
+          "dap_kg": 50,
+          "mop_kg": 20
+        }
+      },
+      {
+        "stage": "Tillering",
+        "days_after_sowing": 25,
+        "application": {
+          "urea_kg": 20
+        }
+      },
+      {
+        "stage": "Panicle Initiation",
+        "days_after_sowing": 45,
+        "application": {
+          "urea_kg": 15
+        }
+      }
+    ],
+    "deficiency_symptoms": {
+      "nitrogen": "Yellowing of leaves",
+      "phosphorus": "Stunted growth",
+      "potassium": "Leaf edge burning"
+    },
+    "sensor_based_recommendation": {
+      "low_nitrogen": "Apply additional 10 kg urea",
+      "low_moisture": "Irrigate before fertilizer application"
+    }
+  },
+  "maize": {
+    "soil_requirements": {
+      "ph_range": "6.0-7.5"
+    },
+    "nutrient_requirement_per_acre": {
+      "nitrogen_kg": 50,
+      "phosphorus_kg": 25,
+      "potassium_kg": 25
+    },
+    "growing_steps": [
+      {
+        "step_number": 1,
+        "title": "Seed Selection & Treatment",
+        "details": "Select high-yielding hybrid varieties suitable for your region. Treat seeds with fungicides (like Thiram or Captan) to protect against soil-borne pathogens."
+      },
+      {
+        "step_number": 2,
+        "title": "Land Preparation",
+        "details": "Plough the field deeply using a mouldboard plough, followed by 2-3 harrowings. Incorporate well-decomposed Farm Yard Manure (FYM) during the final ploughing."
+      },
+      {
+        "step_number": 3,
+        "title": "Sowing",
+        "details": "Sow the seeds in ridges or flat beds with a spacing of 60x20 cm. Sowing depth should be 3-5 cm to ensure proper germination and root establishment."
+      },
+      {
+        "step_number": 4,
+        "title": "Water Management",
+        "details": "Irrigate immediately after sowing if soil moisture is low. Critical stages for irrigation are silking and grain-filling; ensure no water stress during these periods."
+      },
+      {
+        "step_number": 5,
+        "title": "Weed Management",
+        "details": "Apply pre-emergence herbicides like Atrazine to control early weed growth. Perform manual weeding at 30 days and earth up the plants to prevent lodging."
+      },
+      {
+        "step_number": 6,
+        "title": "Pest & Disease Management",
+        "details": "Monitor for Fall Armyworm and stem borers. Apply neem-based pesticides or recommended chemical sprays (e.g., Emamectin benzoate) at the threshold level."
+      },
+      {
+        "step_number": 7,
+        "title": "Harvesting",
+        "details": "Harvest when the cobs turn yellow and the grains harden (black layer formation at the base). Dry the harvested cobs to 12-14% moisture before shelling."
+      }
+    ],
+    "fertilizer_schedule": [
+      {
+        "stage": "Basal",
+        "days_after_sowing": 0,
+        "application": {
+          "urea_kg": 25,
+          "dap_kg": 60
+        }
+      },
+      {
+        "stage": "Knee Height",
+        "days_after_sowing": 30,
+        "application": {
+          "urea_kg": 25
+        }
+      }
+    ],
+    "deficiency_symptoms": {
+      "nitrogen": "Yellow V-shaped leaves",
+      "phosphorus": "Purple leaves",
+      "potassium": "Weak stems"
+    }
+  },
+  "tomato": {
+    "soil_requirements": {
+      "ph_range": "6.0-7.0"
+    },
+    "nutrient_requirement_per_acre": {
+      "nitrogen_kg": 60,
+      "phosphorus_kg": 30,
+      "potassium_kg": 30
+    },
+    "growing_steps": [
+      {
+        "step_number": 1,
+        "title": "Nursery Preparation & Sowing",
+        "details": "Prepare raised nursery beds. Sow high-quality seeds in lines and cover with a thin layer of soil and mulch. Irrigate daily with a rose can."
+      },
+      {
+        "step_number": 2,
+        "title": "Land Preparation",
+        "details": "Plough the main field 4-5 times to achieve a fine tilth. Incorporate 10-15 tons of well-rotted Farm Yard Manure (FYM) per acre."
+      },
+      {
+        "step_number": 3,
+        "title": "Transplanting",
+        "details": "Transplant 25-30 days old healthy seedlings in the late afternoon. Maintain a spacing of 60x45 cm. Provide light irrigation immediately."
+      },
+      {
+        "step_number": 4,
+        "title": "Staking and Pruning",
+        "details": "Support indeterminate varieties with bamboo stakes or strings to prevent fruit contact with the soil. Prune side shoots to improve air circulation and fruit size."
+      },
+      {
+        "step_number": 5,
+        "title": "Water Management",
+        "details": "Drip irrigation is highly recommended to maintain uniform soil moisture. Avoid prolonged dry spells followed by heavy watering, which causes fruit cracking."
+      },
+      {
+        "step_number": 6,
+        "title": "Pest & Disease Management",
+        "details": "Monitor for fruit borers, whiteflies, and early blight. Use yellow sticky traps and apply appropriate bio-pesticides or fungicides preventively."
+      },
+      {
+        "step_number": 7,
+        "title": "Harvesting",
+        "details": "Harvest fruits at the correct maturity stage (e.g., breaker stage for long-distance transport, fully ripe for local markets) by gently twisting them off the vine."
+      }
+    ],
+    "fertilizer_schedule": [
+      {
+        "stage": "Basal",
+        "days_after_transplant": 0,
+        "application": {
+          "farmyard_manure": "5 tons",
+          "dap_kg": 50
+        }
+      },
+      {
+        "stage": "Flowering",
+        "days_after_transplant": 30,
+        "application": {
+          "urea_kg": 20,
+          "mop_kg": 20
+        }
+      },
+      {
+        "stage": "Fruit Development",
+        "days_after_transplant": 50,
+        "application": {
+          "urea_kg": 20
+        }
+      }
+    ],
+    "deficiency_symptoms": {
+      "nitrogen": "Pale green leaves",
+      "calcium": "Blossom end rot"
+    }
+  }
+}

@@ -11,20 +11,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { CardShimmer } from '@/components/ui/loading-shimmer';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/animations';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Sprout, MapPin, Ruler, Droplet, Trash2, Cloud, Thermometer, Wind, CloudRain } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useDistrictContext } from '@/contexts/DistrictContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Plus, Sprout, MapPin, Ruler, Droplet, Trash2, Cloud, Thermometer, Wind, CloudRain, Shield, Activity, Database, Clock } from 'lucide-react';
 
 interface Farm {
   id: string;
   name: string;
   location: string;
-  area_acres: number;
-  soil_type: string | null;
-  irrigation_type: string | null;
-  created_at: string;
+  areaAcres: number;
+  area_acres?: number; // Fallback
+  soilType: string | null;
+  soil_type?: string | null; // Fallback
+  irrigationType: string | null;
+  irrigation_type?: string | null; // Fallback
+  createdAt: string;
+  created_at?: string; // Fallback
 }
 
 interface WeatherData {
@@ -54,7 +59,9 @@ export default function MyFarm() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedDistrict, setSelectedDistrict] = useState<string>('');
+  const { language } = useLanguage();
+  const isKannada = language === 'kn';
+  const { selectedDistrict, setSelectedDistrict } = useDistrictContext();
   const [districts, setDistricts] = useState<string[]>([]);
   const [districtData, setDistrictData] = useState<any[]>([]);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -102,14 +109,9 @@ export default function MyFarm() {
 
   const initializePage = async () => {
     try {
-      // Load districts from CSV
       await loadDistrictDataFromCSV();
-
-      // Set default district from profile or first available
       const defaultDistrict = profile?.location || districts[0] || '';
       setSelectedDistrict(defaultDistrict);
-
-      // Load farms
       await loadFarms();
     } catch (error) {
       console.error('Error initializing page:', error);
@@ -124,8 +126,8 @@ export default function MyFarm() {
     } catch (error) {
       const err = error as { message?: string };
       toast({
-        title: 'Error loading farms',
-        description: err.message ?? 'Failed to load farms',
+        title: 'Registry Access Failed',
+        description: err.message ?? 'Could not retrieve farm data.',
         variant: 'destructive',
       });
     } finally {
@@ -135,15 +137,11 @@ export default function MyFarm() {
 
   const loadDistrictData = async () => {
     if (!selectedDistrict) return;
-
     try {
-      // Load weather data
       const weatherRes = await WeatherAPI.getWeatherForDistrict(selectedDistrict);
       if (weatherRes) {
         setWeatherData(weatherRes.weather);
       }
-
-      // Load crop recommendations
       const recommendations = await cropRecommender.getRecommendations(selectedDistrict);
       setCropRecommendations(recommendations);
     } catch (error) {
@@ -153,21 +151,26 @@ export default function MyFarm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       if (!user?.id) return;
+      const areaAcres = parseFloat(formData.area_acres);
+      if (isNaN(areaAcres)) {
+        toast({ title: 'Invalid Area', description: 'Please enter a numeric value for surface area.', variant: 'destructive' });
+        return;
+      }
+
       await FarmsAPI.createFarm({
         user_id: user.id,
         name: formData.name,
-        location: formData.location,
-        area_acres: parseFloat(formData.area_acres),
-        soil_type: formData.soil_type || undefined,
-        irrigation_type: formData.irrigation_type || undefined,
+        location: formData.location || selectedDistrict,
+        area_acres: areaAcres,
+        soil_type: formData.soil_type || 'General',
+        irrigation_type: formData.irrigation_type || 'Standard',
       });
 
       toast({
-        title: 'Farm added!',
-        description: 'Your farm has been successfully added.',
+        title: 'Asset Registered',
+        description: 'New agricultural land asset has been added to your protocol.',
       });
 
       setDialogOpen(false);
@@ -182,8 +185,8 @@ export default function MyFarm() {
     } catch (error) {
       const err = error as { message?: string };
       toast({
-        title: 'Error adding farm',
-        description: err.message ?? 'Failed to add farm',
+        title: 'Registration Failed',
+        description: err.message ?? 'Internal server synchronization error.',
         variant: 'destructive',
       });
     }
@@ -193,28 +196,26 @@ export default function MyFarm() {
     if (!weatherData || !selectedDistrict || !user) return;
     try {
       await WeatherAPI.logWeatherForFarm(farmId, selectedDistrict, weatherData, user.id);
-      toast({ title: 'Weather logged successfully!', description: 'Saved to farm history.' });
+      toast({ title: 'Atmospheric Log Saved', description: 'Environmental data committed to history.' });
     } catch (error) {
-      toast({ title: 'Failed to log weather', variant: 'destructive' });
+      toast({ title: 'Data Logging Failed', variant: 'destructive' });
     }
   };
 
   const handleDelete = async (farmId: string) => {
-    if (!confirm('Are you sure you want to delete this farm?')) return;
-
+    if (!confirm('Are you sure you want to decommission this farm asset?')) return;
     try {
       await FarmsAPI.deleteFarm(farmId);
-
       toast({
-        title: 'Farm deleted',
-        description: 'Your farm has been removed.',
+        title: 'Asset Decommissioned',
+        description: 'The farm registry entry has been purged.',
       });
       loadFarms();
     } catch (error) {
       const err = error as { message?: string };
       toast({
-        title: 'Error deleting farm',
-        description: err.message ?? 'Failed to delete farm',
+        title: 'Purge Failed',
+        description: err.message ?? 'Could not remove entry from registry.',
         variant: 'destructive',
       });
     }
@@ -223,8 +224,8 @@ export default function MyFarm() {
   if (!user) {
     return (
       <Layout>
-        <div className="text-center py-12">
-          <p className="text-gray-600">Please sign in to manage your farms.</p>
+        <div className="text-center py-24">
+          <p className="text-gold-100/40 font-medium italic">Please authenticate to access the Land Registry.</p>
         </div>
       </Layout>
     );
@@ -232,289 +233,300 @@ export default function MyFarm() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-12 pb-12 max-w-7xl mx-auto">
         <ScrollReveal>
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              My Farm
-            </h1>
-            <p className="text-gray-600 mt-2">Manage your farms, weather insights, and AI recommendations</p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-gray-500" />
-              <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select district" />
-                </SelectTrigger>
-                <SelectContent>
-                  {districts.sort().map((district) => (
-                    <SelectItem key={district} value={district}>
-                      {district}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div>
+              <h1 className="text-4xl font-black text-gold-100 tracking-tight">Land Registry</h1>
+              <p className="text-gold-100/40 text-sm font-bold uppercase tracking-[0.2em] mt-1">Asset & Resource Management</p>
             </div>
 
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Farm
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add New Farm</DialogTitle>
-                  <DialogDescription>
-                    Enter your farm details to start tracking crops and yields
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Farm Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Green Valley Farm"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      placeholder="Punjab, India"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="area">Area (Acres)</Label>
-                    <Input
-                      id="area"
-                      type="number"
-                      step="0.01"
-                      placeholder="10"
-                      value={formData.area_acres}
-                      onChange={(e) => setFormData({ ...formData, area_acres: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="soil">Soil Type</Label>
-                    <Select
-                      value={formData.soil_type}
-                      onValueChange={(value) => setFormData({ ...formData, soil_type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select soil type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Alluvial">Alluvial</SelectItem>
-                        <SelectItem value="Black">Black</SelectItem>
-                        <SelectItem value="Red">Red</SelectItem>
-                        <SelectItem value="Laterite">Laterite</SelectItem>
-                        <SelectItem value="Desert">Desert</SelectItem>
-                        <SelectItem value="Mountain">Mountain</SelectItem>
-                        <SelectItem value="Clay">Clay</SelectItem>
-                        <SelectItem value="Sandy">Sandy</SelectItem>
-                        <SelectItem value="Loamy">Loamy</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="irrigation">Irrigation Type</Label>
-                    <Select
-                      value={formData.irrigation_type}
-                      onValueChange={(value) => setFormData({ ...formData, irrigation_type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select irrigation type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Drip">Drip Irrigation</SelectItem>
-                        <SelectItem value="Sprinkler">Sprinkler</SelectItem>
-                        <SelectItem value="Canal">Canal</SelectItem>
-                        <SelectItem value="Tube Well">Tube Well</SelectItem>
-                        <SelectItem value="Rain Fed">Rain Fed</SelectItem>
-                        <SelectItem value="Mixed">Mixed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                      Add Farm
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-3 bg-earth-elevated/50 p-2 pl-4 rounded-2xl border border-earth-border">
+                <MapPin className="h-4 w-4 text-gold-400/60" />
+                <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
+                  <SelectTrigger className="w-48 bg-transparent border-none text-gold-100 font-bold focus:ring-0 notranslate" translate="no">
+                    <SelectValue placeholder="District Protocol" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-earth-elevated border-earth-border notranslate" translate="no">
+                    {districts.sort().map((district) => (
+                      <SelectItem key={district} value={district} className="text-gold-100 uppercase text-xs font-bold">
+                        {district}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="btn-gold h-12 px-8 shadow-gold-glow">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Register Asset
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-earth-elevated border-earth-border text-gold-100 max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-black">Initialize New Asset</DialogTitle>
+                    <DialogDescription className="text-gold-100/40 font-bold uppercase text-[10px] tracking-widest mt-2">
+                      Input land coordinate and metadata parameters
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Asset Identifier</Label>
+                      <Input
+                        placeholder="e.g. Northern Sector A1"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 rounded-xl h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Geo-Location</Label>
+                      <Input
+                        placeholder="District, Region"
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        className="bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 rounded-xl h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Surface Area (Acres)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="10.00"
+                        value={formData.area_acres}
+                        onChange={(e) => setFormData({ ...formData, area_acres: e.target.value })}
+                        className="bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 rounded-xl h-11"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Soil Composition</Label>
+                          <Select value={formData.soil_type} onValueChange={(v) => setFormData({ ...formData, soil_type: v })}>
+                             <SelectTrigger className="bg-earth-main border-earth-border text-gold-100 rounded-xl h-11">
+                                <SelectValue placeholder="Type" />
+                             </SelectTrigger>
+                             <SelectContent className="bg-earth-elevated border-earth-border">
+                                {['Alluvial', 'Black', 'Red', 'Laterite', 'Desert', 'Clay', 'Sandy', 'Loamy'].map(t => (
+                                   <SelectItem key={t} value={t} className="text-gold-100 uppercase text-[10px] font-bold">{t}</SelectItem>
+                                ))}
+                             </SelectContent>
+                          </Select>
+                       </div>
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-gold-100/40">Irrigation Protocol</Label>
+                          <Select value={formData.irrigation_type} onValueChange={(v) => setFormData({ ...formData, irrigation_type: v })}>
+                             <SelectTrigger className="bg-earth-main border-earth-border text-gold-100 rounded-xl h-11">
+                                <SelectValue placeholder="System" />
+                             </SelectTrigger>
+                             <SelectContent className="bg-earth-elevated border-earth-border">
+                                {['Drip', 'Sprinkler', 'Canal', 'Tube Well', 'Rain Fed', 'Mixed'].map(t => (
+                                   <SelectItem key={t} value={t} className="text-gold-100 uppercase text-[10px] font-bold">{t}</SelectItem>
+                                ))}
+                             </SelectContent>
+                          </Select>
+                       </div>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                      <Button type="button" variant="ghost" className="text-gold-100/40 font-bold uppercase text-xs" onClick={() => setDialogOpen(false)}>
+                        Abort
+                      </Button>
+                      <Button type="submit" className="btn-gold px-8">
+                        Commit Asset
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
-        </div>
         </ScrollReveal>
 
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Loading your farms...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+             {[1,2,3].map(i => <div key={i} className="h-64 bg-earth-elevated/40 rounded-[2rem] animate-pulse border border-earth-border" />)}
           </div>
         ) : farms.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Sprout className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No farms yet</h3>
-              <p className="text-gray-600 mb-4">Add your first farm to start managing crops and tracking yields</p>
-              <Button
-                onClick={() => setDialogOpen(true)}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Farm
-              </Button>
-            </CardContent>
-          </Card>
+          <ScrollReveal direction="up">
+            <Card className="card-premium py-24 text-center border-none shadow-premium bg-earth-elevated/20">
+              <CardContent>
+                <Sprout className="h-20 w-20 text-gold-400/20 mx-auto mb-6" />
+                <h3 className="text-2xl font-black text-gold-100">No Asset Data Detected</h3>
+                <p className="text-gold-100/40 font-medium max-w-sm mx-auto mt-2 italic">Your agricultural asset registry is currently empty. Initialize your first farm to begin resource tracking.</p>
+                <Button
+                  onClick={() => setDialogOpen(true)}
+                  className="btn-gold mt-10 px-10 h-14"
+                >
+                  <Plus className="mr-2 h-5 w-5" />
+                  Initialize Registry
+                </Button>
+              </CardContent>
+            </Card>
+          </ScrollReveal>
         ) : (
-          <div>
-            {/* Weather and AI Recommendations Section */}
+          <div className="space-y-16">
+            {/* Environmental Intelligence Section */}
             {selectedDistrict && (
-              <ScrollReveal delay={0.1}>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Weather Card */}
-                {weatherData ? (
-                  <Card className="border-blue-100">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Cloud className="h-5 w-5 text-blue-600" />
-                        Weather in {selectedDistrict}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Thermometer className="h-4 w-4 text-red-500" />
-                          <span className="text-2xl font-bold">{weatherData.temperature}°C</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600 capitalize">{weatherData.description}</p>
-                          <p className="text-xs text-gray-500">Humidity: {weatherData.humidity}%</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center gap-2">
-                          <Wind className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">{weatherData.windSpeed} km/h</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CloudRain className="h-4 w-4 text-blue-500" />
-                          <span className="text-sm">Precipitation</span>
-                        </div>
-                      </div>
-
-                      {/* 5-day forecast */}
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium">5-Day Forecast</h4>
-                        <div className="space-y-1">
-                          {weatherData.forecast.slice(0, 5).map((day, index) => (
-                            <div key={index} className="flex justify-between text-xs">
-                              <span>{new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}</span>
-                              <span>{day.temp_min}° - {day.temp_max}°</span>
-                              <span className="text-gray-500">{day.precipitation > 0 ? `${day.precipitation}mm` : '0mm'}</span>
+              <ScrollReveal direction="up" delay={0.1}>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Atmospheric Data */}
+                <Card className="card-premium bg-gold-400/5 border-gold-400/10">
+                  <CardHeader>
+                    <CardTitle className="text-gold-100 font-black tracking-tight flex items-center text-lg">
+                      <Cloud className="h-5 w-5 mr-3 text-gold-400" />
+                      Atmospheric Log: {selectedDistrict}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {weatherData ? (
+                      <>
+                        <div className="flex items-center justify-between p-4 bg-earth-main/50 rounded-[1.5rem] border border-earth-border">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-gold-400/10 rounded-2xl">
+                               <Thermometer className="h-6 w-6 text-gold-400" />
                             </div>
-                          ))}
+                            <div>
+                               <span className="text-3xl font-black text-gold-100">{weatherData.temperature}°C</span>
+                               <p className="text-[10px] font-black uppercase tracking-widest text-gold-400 mt-1">{weatherData.description}</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <CardShimmer />
-                )}
 
-                {/* Crop Recommendations with Details */}
-                {cropRecommendations.length > 0 ? (
-                  <Card className="border-green-100">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Sprout className="h-5 w-5 text-green-600" />
-                        Recommended Crops for {selectedDistrict}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {cropRecommendations.slice(0, 3).map((rec, index) => (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 bg-earth-main/50 rounded-2xl border border-earth-border flex flex-col items-center">
+                            <Wind className="h-4 w-4 text-gold-400/60 mb-2" />
+                            <span className="text-sm font-black text-gold-100">{weatherData.windSpeed} km/h</span>
+                            <span className="text-[9px] font-bold text-gold-100/30 uppercase mt-1">Velocity</span>
+                          </div>
+                          <div className="p-4 bg-earth-main/50 rounded-2xl border border-earth-border flex flex-col items-center">
+                            <CloudRain className="h-4 w-4 text-gold-400/60 mb-2" />
+                            <span className="text-sm font-black text-gold-100">{weatherData.humidity}%</span>
+                            <span className="text-[9px] font-bold text-gold-100/30 uppercase mt-1">Saturation</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-gold-400/10">
+                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gold-400 mb-4 flex items-center">
+                             <Clock className="h-3 w-3 mr-2" /> 5-Day Projection
+                          </h4>
+                          <div className="space-y-3">
+                            {weatherData.forecast.slice(0, 5).map((day, index) => (
+                              <div key={index} className="flex justify-between items-center text-[11px] font-bold">
+                                <span className="text-gold-100 uppercase w-12">{new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+                                <div className="flex-1 mx-4 h-px bg-gold-400/10"></div>
+                                <span className="text-gold-400">{day.temp_max}°</span>
+                                <span className="text-gold-100/20 mx-2">/</span>
+                                <span className="text-gold-100/40">{day.temp_min}°</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="h-64 flex items-center justify-center italic text-gold-100/20 text-xs">Awaiting satellite sync...</div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Cultivation Optimization */}
+                <Card className="card-premium lg:col-span-2 overflow-hidden border-none shadow-premium bg-earth-elevated/40">
+                  <CardHeader className="bg-gold-400/5 p-6 border-b border-gold-400/10">
+                    <CardTitle className="text-gold-100 font-black tracking-tight flex items-center text-lg">
+                      <Shield className="h-5 w-5 mr-3 text-gold-400" />
+                      Yield Optimization Protocols
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {cropRecommendations.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {cropRecommendations.slice(0, 2).map((rec, index) => (
                           <motion.div
                             key={index}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className="border rounded-lg p-4 bg-green-50/50"
+                            className="p-5 bg-earth-main/30 rounded-[2rem] border border-earth-border group hover:border-gold-400/30 transition-all duration-500"
                           >
-                            <div className="flex justify-between items-start mb-3">
+                            <div className="flex justify-between items-start mb-4">
                               <div>
-                                <h4 className="font-semibold text-green-800 text-lg">{rec.cropName}</h4>
-                                <p className="text-sm text-gray-600">{rec.reason}</p>
+                                <h4 className="font-black text-xl text-gold-100 tracking-tighter uppercase group-hover:text-gold-400 transition-colors">{rec.cropName}</h4>
+                                <Badge className="bg-gold-400/10 text-gold-400 border-none text-[9px] uppercase tracking-widest mt-1">
+                                  {rec.season} Protocol
+                                </Badge>
                               </div>
-                              <Badge variant="secondary" className="text-xs">
-                                {rec.season}
-                              </Badge>
+                              <div className="p-2 bg-gold-400/5 rounded-full">
+                                 <Sprout size={16} className="text-gold-400/40" />
+                              </div>
                             </div>
-                            <p className="text-sm text-gray-700 font-medium mb-2">Expected: {rec.expectedYield}</p>
-
-                            {/* District-specific information from CSV */}
-                            {(() => {
-                              const districtInfo = districtData.find(d => d.district === selectedDistrict);
-                              return districtInfo ? (
-                                <div className="space-y-2 text-sm">
-                                  <div>
-                                    <span className="font-medium text-gray-700">Soil Type:</span>
-                                    <p className="text-gray-600 mt-1">{districtInfo.soil_type}</p>
+                            <p className="text-xs text-gold-100/40 leading-relaxed italic mb-6">"{rec.reason}"</p>
+                            
+                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-earth-border/50">
+                               <div>
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-gold-100/30">Target Yield</span>
+                                  <p className="text-sm font-black text-gold-400 mt-1">{rec.expectedYield}</p>
+                               </div>
+                               <div>
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-gold-100/30">District Compatibility</span>
+                                  <div className="flex gap-1 mt-1.5">
+                                     {[1,2,3,4,5].map(i => <div key={i} className={`h-1 flex-1 rounded-full ${i <= 4 ? 'bg-gold-400' : 'bg-gold-400/10'}`} />)}
                                   </div>
-                                  <div>
-                                    <span className="font-medium text-gray-700">Average Rainfall:</span>
-                                    <p className="text-gray-600 mt-1">{districtInfo.avg_rainfall}</p>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium text-gray-700">Weather Pattern:</span>
-                                    <p className="text-gray-600 mt-1">{districtInfo.weather_pattern}</p>
-                                  </div>
-                                </div>
-                              ) : null;
-                            })()}
+                               </div>
+                            </div>
                           </motion.div>
                         ))}
+                        
+                        <div className="md:col-span-2 p-6 bg-gold-400/5 rounded-[2rem] border border-gold-400/10 flex items-center justify-between">
+                           <div className="flex items-center gap-4">
+                              <div className="p-3 bg-earth-main rounded-2xl border border-gold-400/20">
+                                 <Database className="text-gold-400 h-5 w-5" />
+                              </div>
+                              <div>
+                                 <h5 className="font-black text-gold-100 uppercase tracking-tight text-sm">District Metadata</h5>
+                                 <p className="text-[10px] text-gold-100/40 font-bold uppercase tracking-widest">Active Region: {selectedDistrict}</p>
+                              </div>
+                           </div>
+                           <Button variant="outline" className="border-gold-400/20 text-gold-400 text-[10px] font-black uppercase tracking-widest hover:bg-gold-400/5" onClick={() => window.open('/districts.csv')}>Export Dataset</Button>
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <CardShimmer />
-                )}
+                    ) : (
+                      <div className="h-64 flex items-center justify-center italic text-gold-100/20 text-xs font-bold uppercase tracking-widest">Generating optimal cultivation paths...</div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
               </ScrollReveal>
             )}
 
-            {/* Farms Grid */}
-            <ScrollReveal delay={0.2}>
+            {/* Asset Ledger Grid */}
+            <ScrollReveal direction="up" delay={0.2}>
             <div>
-              <h2 className="text-xl font-semibold mb-4 text-gradient">Your Farms</h2>
+              <div className="flex items-center justify-between mb-8">
+                 <h2 className="text-2xl font-black text-gold-100 tracking-tight flex items-center uppercase">
+                    <Activity className="h-5 w-5 mr-3 text-gold-400" /> Active Asset Ledger
+                 </h2>
+                 <span className="text-[10px] font-black text-gold-100/30 uppercase tracking-[0.2em]">{farms.length} Registers Detected</span>
+              </div>
+
               <StaggerContainer staggerDelay={0.1}>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {farms.map((farm, index) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {farms.map((farm) => (
                   <StaggerItem key={farm.id}>
-                    <Card className="card-hover transition-shadow duration-300 border-green-100">
-                      <CardHeader>
+                    <Card className="card-premium group hover:scale-[1.02] transition-all duration-500 border-earth-border/50 bg-earth-elevated/30">
+                      <CardHeader className="pb-4">
                         <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-xl text-green-700">{farm.name}</CardTitle>
-                            <CardDescription className="flex items-center mt-1">
-                              <MapPin className="h-3 w-3 mr-1" />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                               <h3 className="text-xl font-black text-gold-100 uppercase tracking-tighter group-hover:text-gold-400 transition-colors">{farm.name}</h3>
+                               <Badge className="bg-gold-400/10 text-gold-400 border-none text-[8px] uppercase font-black">Online</Badge>
+                            </div>
+                            <CardDescription className="flex items-center text-[10px] font-bold text-gold-100/30 uppercase tracking-widest">
+                              <MapPin className="h-3 w-3 mr-2 text-gold-400/40" />
                               {farm.location}
                             </CardDescription>
                           </div>
@@ -522,9 +534,8 @@ export default function MyFarm() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              title="Log Current Weather"
                               onClick={() => handleLogWeather(farm.id)}
-                              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                              className="h-8 w-8 text-gold-100/20 hover:text-gold-400 hover:bg-gold-400/5 rounded-xl transition-all"
                             >
                               <Cloud className="h-4 w-4" />
                             </Button>
@@ -532,30 +543,37 @@ export default function MyFarm() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDelete(farm.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              className="h-8 w-8 text-gold-100/20 hover:text-red-400 hover:bg-red-400/5 rounded-xl transition-all"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-center text-sm">
-                          <Ruler className="h-4 w-4 mr-2 text-green-600" />
-                          <span className="font-medium">{farm.area_acres} acres</span>
+                      <CardContent className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="p-3 bg-earth-main/50 rounded-2xl border border-earth-border">
+                              <span className="text-[8px] font-black text-gold-100/20 uppercase tracking-widest block mb-1">Total Scale</span>
+                              <div className="flex items-baseline gap-1">
+                                 <span className="text-lg font-black text-gold-100 tracking-tighter">{farm.areaAcres || farm.area_acres || 0}</span>
+                                 <span className="text-[9px] font-bold text-gold-100/40 uppercase">Acres</span>
+                              </div>
+                           </div>
+                           <div className="p-3 bg-earth-main/50 rounded-2xl border border-earth-border">
+                              <span className="text-[8px] font-black text-gold-100/20 uppercase tracking-widest block mb-1">Environment</span>
+                              <div className="flex items-baseline gap-1">
+                                 <span className="text-xs font-black text-gold-100 uppercase tracking-tight">{farm.soilType || farm.soil_type || 'Unknown'}</span>
+                              </div>
+                           </div>
                         </div>
-                        {farm.soil_type && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Sprout className="h-4 w-4 mr-2 text-green-600" />
-                            <span>{farm.soil_type} soil</span>
-                          </div>
-                        )}
-                        {farm.irrigation_type && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Droplet className="h-4 w-4 mr-2 text-blue-600" />
-                            <span>{farm.irrigation_type}</span>
-                          </div>
-                        )}
+
+                        <div className="flex items-center justify-between p-3 px-4 bg-gold-400/5 rounded-2xl border border-gold-400/10 group-hover:border-gold-400/30 transition-all">
+                           <div className="flex items-center gap-3">
+                              <Droplet className="h-4 w-4 text-gold-400/40" />
+                              <span className="text-[10px] font-black text-gold-100 uppercase tracking-widest">{farm.irrigationType || farm.irrigation_type || 'Manual Protocol'}</span>
+                           </div>
+                           <Button variant="link" className="p-0 h-auto text-[9px] font-black text-gold-400 uppercase tracking-widest no-underline hover:text-gold-100" onClick={() => window.location.href='/crop-details'}>Analyze System</Button>
+                        </div>
                       </CardContent>
                     </Card>
                   </StaggerItem>

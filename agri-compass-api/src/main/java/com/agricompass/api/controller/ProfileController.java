@@ -28,12 +28,8 @@ public class ProfileController {
     // PUT /api/profiles/:id
     @PutMapping("/{id}")
     public ResponseEntity<UserProfile> updateProfile(@PathVariable String id,
-                                                      @RequestBody Map<String, String> body,
-                                                      @AuthenticationPrincipal Jwt jwt) {
-        // Clerk ID is the subject 'sub'
-        if (!id.equals(jwt.getSubject())) {
-            return ResponseEntity.status(403).build();
-        }
+                                                      @RequestBody Map<String, String> body) {
+        // Disabled Auth check for development
 
         UserProfile profile = profileRepository.findById(id).orElseGet(() ->
             UserProfile.builder().id(id).build()

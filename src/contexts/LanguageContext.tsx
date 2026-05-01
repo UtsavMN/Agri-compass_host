@@ -29,10 +29,22 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (i18n.language !== language) {
       i18n.changeLanguage(language);
     }
+    
+    // Update HTML lang attribute
+    document.documentElement.lang = language;
+
+    // Trigger Google Translate
+    setTimeout(() => {
+      const selectField = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+      if (selectField) {
+        selectField.value = language === 'kn' ? 'kn' : 'en';
+        selectField.dispatchEvent(new Event('change'));
+      }
+    }, 500);
+
   }, [language, i18n]);
 
   useEffect(() => {
-    // Listen to i18n language changes
     const handleLanguageChange = (lng: string) => {
       if (lng !== language) {
         setLanguageState(lng as Language);
@@ -46,11 +58,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, [language, i18n]);
 
   const toggleLanguage = () => {
-    setLanguageState(prev => prev === 'en' ? 'kn' : 'en');
+    const newLang = language === 'en' ? 'kn' : 'en';
+    setLanguageState(newLang);
+    localStorage.setItem('language', newLang);
+    document.documentElement.lang = newLang;
   };
 
   const setLanguage = (newLanguage: Language) => {
     setLanguageState(newLanguage);
+    localStorage.setItem('language', newLanguage);
+    document.documentElement.lang = newLanguage;
   };
 
   return (

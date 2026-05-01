@@ -1,5 +1,6 @@
 package com.agricompass.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -47,10 +48,12 @@ public class Farm {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "farm", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<WeatherLog> weatherLogs = new ArrayList<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "farm", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<FarmImage> images = new ArrayList<>();

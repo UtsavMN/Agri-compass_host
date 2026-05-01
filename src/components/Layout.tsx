@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,10 +22,10 @@ import {
   LogOut,
   Menu,
   Cloud,
-  Sun,
-  Moon,
   X,
   Languages,
+  Settings,
+  MessageSquare,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
@@ -37,11 +36,11 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const { user, profile, signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -49,204 +48,226 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const navItems = [
-    { path: '/', label: t('nav.community'), icon: Home },
-    { path: '/dashboard', label: t('nav.dashboard'), icon: Home },
-    { path: '/my-farm', label: t('nav.myFarm'), icon: Sprout },
-    { path: '/market-prices', label: t('nav.marketPrices'), icon: TrendingUp },
-    { path: '/schemes', label: t('nav.govSchemes'), icon: FileText },
-    { path: '/air-agent', label: t('nav.aiAgent'), icon: HelpCircle },
-    { path: '/weather', label: t('nav.weather'), icon: Cloud },
+    { path: '/dashboard', label: 'Dashboard', icon: Home },
+    { path: '/', label: 'Community', icon: MessageSquare },
+    { path: '/my-farm', label: 'My Farm', icon: Sprout },
+    { path: '/market-prices', label: 'Market Prices', icon: TrendingUp },
+    { path: '/schemes', label: 'Gov Schemes', icon: FileText },
+    { path: '/air-agent', label: 'AI Agent', icon: HelpCircle },
+    { path: '/weather', label: 'Weather', icon: Cloud },
   ];
 
-  // Removed the strict return so the layout wraps the app beautifully even when logged out.
+  const bottomNavItems = [
+    { path: '/profile', label: 'Settings', icon: Settings },
+  ];
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      theme === 'dark'
-        ? 'bg-surface text-white'
-        : 'bg-surface-alt text-body'
-    }`}>
-      <ScrollReveal>
-        <nav className={`glass-effect border-b transition-colors duration-300 ${
-          theme === 'dark'
-            ? 'border-surface bg-surface-alt'
-            : 'border-surface bg-surface'
-        } sticky top-0 z-50 shadow-soft`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <Link to="/" className="flex items-center space-x-2 group">
-                <Sprout className={`h-8 w-8 transition-all duration-300 ${
-                  theme === 'dark' ? 'text-green-400' : 'text-leaf-600'
-                } group-hover:scale-110 group-hover:rotate-12`} />
-                <span className={`text-xl font-bold transition-colors duration-300 ${
-                  theme === 'dark'
-                    ? 'text-white'
-                    : 'bg-gradient-to-r from-leaf-600 to-emerald-600 bg-clip-text text-transparent'
-                }`}>
-                  Agri Compass
-                </span>
-              </Link>
+    <div className="min-h-screen flex" style={{ background: 'var(--bg-main)' }}>
+      {/* ===== SIDEBAR (Desktop) ===== */}
+      <aside className="hidden lg:flex flex-col w-60 border-r fixed h-screen z-40"
+        style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+        
+        {/* Logo */}
+        <div className="flex items-center gap-2.5 px-5 h-16 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+          <Sprout className="h-7 w-7" style={{ color: 'var(--accent)' }} />
+          <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+            Agri Compass
+          </span>
+        </div>
 
-              {/* Desktop Navigation */}
-              <div className="hidden md:flex items-center space-x-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <Link key={item.path} to={item.path}>
-                      <Button
-                        variant={isActive ? 'default' : 'ghost'}
-                        size="sm"
-                        className={`transition-all duration-200 mobile-touch-target ${
-                          isActive
-                            ? 'btn-primary'
-                            : theme === 'dark'
-                                ? 'hover:bg-surface-alt text-secondary'
-                                : 'hover:bg-surface-soft'
-                        }`}
-                      >
-                        <Icon className="h-4 w-4 mr-2" />
-                        {item.label}
-                      </Button>
-                    </Link>
-                  );
-                })}
-              </div>
+        {/* Scrollable Nav Area */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+          {/* Nav Items */}
+          <nav className="flex-1 px-3 py-4 space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              return (
+                <Link key={item.path} to={item.path}>
+                  <div
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'text-gold-400'
+                        : 'hover:text-gold-300'
+                    }`}
+                    style={{
+                      background: isActive ? 'var(--accent-soft)' : 'transparent',
+                      color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    <Icon className="h-4.5 w-4.5 flex-shrink-0" style={{ width: '18px', height: '18px' }} />
+                    <span>{item.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </nav>
 
-              <div className="flex items-center space-x-2">
-                {/* Language Toggle */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleLanguage}
-                  className={`rounded-full transition-all duration-200 mobile-touch-target ${
-                    theme === 'dark' ? 'hover:bg-surface-alt' : 'hover:bg-surface-soft'
-                  }`}
-                  title={t('common.languageToggle')}
-                >
-                  <Languages className="h-5 w-5" />
-                </Button>
+          {/* Bottom nav items */}
+          <div className="px-3 pb-4 space-y-1 border-t pt-3 mt-auto" style={{ borderColor: 'var(--border-subtle)' }}>
+            {bottomNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              return (
+                <Link key={item.path} to={item.path}>
+                  <div
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+                    style={{
+                      background: isActive ? 'var(--accent-soft)' : 'transparent',
+                      color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    <Icon className="h-4.5 w-4.5 flex-shrink-0" style={{ width: '18px', height: '18px' }} />
+                    <span>{item.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </aside>
 
-                {/* Theme Toggle - Made more prominent with enhanced styling */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleTheme}
-                  className={`rounded-full transition-all duration-300 mobile-touch-target border-2 ${
-                    theme === 'dark'
-                      ? 'hover:bg-surface-alt border-surface'
-                      : 'hover:bg-surface-soft border-surface'
-                  }`}
-                  title={theme === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
-                >
-                  {theme === 'dark' ? (
-                    <Sun className="h-5 w-5 text-leaf-300 animate-pulse-soft" />
-                  ) : (
-                    <Moon className="h-5 w-5 text-leaf-700 animate-bounce-gentle" />
-                  )}
-                </Button>
-
-                {/* User Menu / Sign In */}
-                {user ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="rounded-full">
-                        <User className="h-5 w-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium">
-                            {profile?.full_name || profile?.username || 'User'}
-                          </p>
-                          <p className="text-xs text-secondary">{user.email}</p>
-                        </div>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate('/profile')}>
-                        <User className="mr-2 h-4 w-4" />
-                        {t('nav.profile')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleSignOut}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        {t('auth.signOut')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Button onClick={() => navigate('/auth')} className="btn-primary">
-                    Sign In
-                  </Button>
-                )}
-
-                {/* Mobile Menu Button */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setMobileMenuOpen(true)}
-                  className="md:hidden"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </div>
+      {/* ===== MAIN CONTENT ===== */}
+      <div className="flex-1 lg:ml-60 flex flex-col min-h-screen">
+        {/* Top Bar */}
+        <header
+          className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 sm:px-6 border-b"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+        >
+          {/* Mobile: hamburger + logo */}
+          <div className="flex items-center gap-3 lg:hidden">
+            <button onClick={() => setMobileMenuOpen(true)} className="p-1.5 rounded-lg" style={{ color: 'var(--text-secondary)' }}>
+              <Menu className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Sprout className="h-5 w-5" style={{ color: 'var(--accent)' }} />
+              <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Agri Compass</span>
             </div>
           </div>
-        </nav>
-      </ScrollReveal>
 
-      {/* Mobile Menu Overlay */}
+          {/* Desktop: top bar nav links */}
+          <div className="hidden lg:flex items-center gap-1">
+            {navItems.slice(0, 6).map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link key={item.path} to={item.path}>
+                  <span
+                    className="text-xs font-medium px-3 py-1.5 rounded-md transition-all duration-200"
+                    style={{
+                      color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                      background: isActive ? 'var(--accent-soft)' : 'transparent',
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Right: actions */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleLanguage}
+              className="rounded-full h-8 w-8"
+              style={{ color: 'var(--text-secondary)' }}
+              title="Toggle Language"
+            >
+              <Languages className="h-4 w-4" />
+            </Button>
+
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="h-8 w-8 rounded-full flex items-center justify-center transition-all"
+                    style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+                  >
+                    <User className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-subtle)' }}>
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                        {profile?.full_name || profile?.username || 'User'}
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{user.primaryEmailAddress?.emailAddress}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator style={{ background: 'var(--border-subtle)' }} />
+                  <DropdownMenuItem onClick={() => navigate('/profile')} style={{ color: 'var(--text-secondary)' }}>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut} style={{ color: 'var(--text-secondary)' }}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full">
+          {children}
+        </main>
+      </div>
+
+      {/* ===== MOBILE MENU OVERLAY ===== */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            className="fixed inset-0 z-50 lg:hidden"
+            style={{ background: 'rgba(0,0,0,0.6)' }}
             onClick={() => setMobileMenuOpen(false)}
           >
             <motion.div
-              initial={{ x: '100%' }}
+              initial={{ x: '-100%' }}
               animate={{ x: 0 }}
-              exit={{ x: '100%' }}
+              exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed right-0 top-0 h-full w-80 bg-surface shadow-xl"
+              className="fixed left-0 top-0 h-full w-72 shadow-2xl"
+              style={{ background: 'var(--bg-card)' }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between p-4 border-b border-surface">
-                <h2 className="text-lg font-semibold">{t('nav.community')}</h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
+              <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+                <div className="flex items-center gap-2">
+                  <Sprout className="h-6 w-6" style={{ color: 'var(--accent)' }} />
+                  <span className="font-bold" style={{ color: 'var(--text-primary)' }}>Agri Compass</span>
+                </div>
+                <button onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--text-muted)' }}>
                   <X className="h-5 w-5" />
-                </Button>
+                </button>
               </div>
 
-              <div className="p-4 space-y-2">
-                {navItems.map((item) => {
+              <div className="p-3 space-y-1">
+                {[...navItems, ...bottomNavItems].map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.path;
                   return (
-                    <Button
+                    <button
                       key={item.path}
-                      variant={isActive ? 'default' : 'ghost'}
-                      className={`w-full justify-start transition-all duration-200 ${
-                        isActive
-                          ? 'btn-primary'
-                          : theme === 'dark'
-                            ? 'hover:bg-surface-alt text-secondary'
-                            : 'hover:bg-surface-soft'
-                      }`}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-left"
+                      style={{
+                        background: isActive ? 'var(--accent-soft)' : 'transparent',
+                        color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
+                      }}
                       onClick={() => {
                         navigate(item.path);
                         setMobileMenuOpen(false);
                       }}
                     >
-                      <Icon className="h-4 w-4 mr-3" />
+                      <Icon style={{ width: '18px', height: '18px' }} />
                       {item.label}
-                    </Button>
+                    </button>
                   );
                 })}
               </div>
@@ -254,10 +275,6 @@ export default function Layout({ children }: LayoutProps) {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
     </div>
   );
 }

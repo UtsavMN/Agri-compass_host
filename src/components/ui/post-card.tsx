@@ -5,7 +5,7 @@ import { Button } from './button'
 import { Card } from './card'
 import { Textarea } from './textarea'
 import { format } from 'date-fns'
-import { Heart, MessageCircle, Share2, MoreVertical, Loader2 } from 'lucide-react'
+import { Heart, MessageCircle, Share2, MoreVertical, Loader2, MapPin } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import {
   DropdownMenu,
@@ -22,6 +22,7 @@ interface PostCardProps {
     kn_caption?: string | null
     images?: string[]
     video_url?: string
+    location?: string
     created_at: string
     user: {
       id: string
@@ -81,6 +82,8 @@ export function PostCard({
       // Re-fetch comments to display the newly posted one
       const updatedComments = await PostsAPI.getComments(post.id)
       setComments(updatedComments)
+    } catch (error) {
+       console.error("Comment failed", error);
     } finally {
       setIsSubmitting(false)
     }
@@ -89,88 +92,107 @@ export function PostCard({
   const handleShare = () => {
     onShare?.(post.id)
     toast({
-      title: 'Link copied to clipboard',
-      description: 'You can now share this post with others',
+      title: 'Transmission Link Encrypted',
+      description: 'The post identifier has been copied to your clipboard.',
     })
   }
 
   return (
-    <Card className="mb-4">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Avatar>
+    <Card className="card-premium border-none shadow-premium mb-6 overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 border border-gold-400/20">
               <AvatarImage src={post.user.avatar_url} />
-              <AvatarFallback>{post.user.username[0].toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="bg-gold-400/10 text-gold-400 font-bold">{post.user.username[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium">{post.user.full_name || post.user.username}</p>
-              <p className="text-sm text-gray-500">
-                {format(new Date(post.created_at), 'MMM d, yyyy')}
+              <div className="flex items-center gap-2">
+                 <p className="font-black text-gold-100 uppercase tracking-tight text-sm">{post.user.full_name || post.user.username}</p>
+                 {post.location && (
+                   <span className="flex items-center text-[10px] text-gold-400/60 font-bold uppercase tracking-tighter bg-gold-400/5 px-2 py-0.5 rounded-full border border-gold-400/10">
+                     <MapPin size={8} className="mr-1" /> {post.location}
+                   </span>
+                 )}
+              </div>
+              <p className="text-[10px] font-bold text-gold-100/30 uppercase tracking-widest mt-0.5">
+                {format(new Date(post.created_at), 'MMMM dd, yyyy')}
               </p>
             </div>
           </div>
           {currentUserId === post.user.id && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="text-gold-100/40 hover:text-gold-100">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => onDelete?.(post.id)} className="text-red-600">
-                  Delete post
+              <DropdownMenuContent className="bg-earth-elevated border-earth-border">
+                <DropdownMenuItem onClick={() => onDelete?.(post.id)} className="text-red-400 focus:text-red-400 focus:bg-red-400/10">
+                  Delete Transmission
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
         </div>
 
-        <div className="mb-4 whitespace-pre-wrap">
-          <p className="font-medium">{post.content}</p>
+        <div className="mb-6">
+          <p className="text-gold-100/90 leading-relaxed font-medium italic">"{post.content}"</p>
           {post.kn_caption && (
-            <p className="text-sm text-gray-600 mt-2">{post.kn_caption}</p>
+            <div className="mt-4 p-3 bg-gold-400/5 rounded-xl border border-gold-400/10">
+               <p className="text-xs text-gold-400/80 leading-relaxed font-bold">{post.kn_caption}</p>
+            </div>
           )}
         </div>
 
         {post.images && post.images.length > 0 && (
-          <div className="grid gap-2 mb-4">
+          <div className="grid gap-3 mb-6">
             {post.images.map((image, index) => (
-              <img
-                key={index}
-                src={image}
-                alt={`Post image ${index + 1}`}
-                className="rounded-lg max-h-96 w-full object-cover"
-              />
+              <div key={index} className="rounded-2xl overflow-hidden border border-earth-border shadow-inner">
+                <img
+                  src={image}
+                  alt={`Transmission Visual ${index + 1}`}
+                  className="max-h-96 w-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                />
+              </div>
             ))}
           </div>
         )}
 
         {post.video_url && (
-          <video
-            src={post.video_url}
-            controls
-            className="rounded-lg max-h-96 w-full object-cover mb-4"
-          />
+          <div className="rounded-2xl overflow-hidden border border-earth-border mb-6">
+             <video
+               src={post.video_url}
+               controls
+               className="max-h-96 w-full object-cover"
+             />
+          </div>
         )}
 
-        <div className="flex items-center gap-4 text-gray-500">
-          <Button
-            variant="ghost"
-            size="sm"
+        <div className="flex items-center gap-6 text-gold-100/40 pt-4 border-t border-earth-border/50">
+          <button
             onClick={handleLike}
-            className={post.isLiked ? 'text-red-500' : ''}
+            className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${post.isLiked ? 'text-red-400' : 'hover:text-gold-400'}`}
           >
-            <Heart className="h-4 w-4 mr-1" />
-            {post._count?.likes || 0}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setIsCommenting(!isCommenting)}>
-            <MessageCircle className="h-4 w-4 mr-1" />
-            {post._count?.comments || 0}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleShare}>
-            <Share2 className="h-4 w-4 mr-1" />
-          </Button>
+            <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
+            {post._count?.likes || 0} <span className="hidden sm:inline">Reactions</span>
+          </button>
+          
+          <button 
+            onClick={() => setIsCommenting(!isCommenting)}
+            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-gold-400 transition-all"
+          >
+            <MessageCircle className="h-4 w-4" />
+            {post._count?.comments || 0} <span className="hidden sm:inline">Responses</span>
+          </button>
+          
+          <button 
+            onClick={handleShare}
+            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-gold-400 transition-all ml-auto"
+          >
+            <Share2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Broadcast</span>
+          </button>
         </div>
 
         <AnimatePresence>
@@ -179,53 +201,56 @@ export function PostCard({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-4 border-t pt-4"
+              className="mt-6 space-y-6"
             >
-              
-              <div className="mb-6 space-y-4">
+              <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                 {isLoadingComments ? (
-                  <div className="flex items-center justify-center p-4">
-                    <Loader2 className="h-6 w-6 animate-spin text-green-600" />
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-gold-400" />
                   </div>
                 ) : comments.length > 0 ? (
                   comments.map((comment) => (
                     <motion.div 
                       key={comment.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex gap-3 bg-gray-50/50 p-3 rounded-lg"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex gap-4 p-4 bg-earth-elevated/40 rounded-2xl border border-earth-border/50"
                     >
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-8 w-8 border border-gold-400/10">
                         <AvatarImage src={comment.user.avatar_url} />
-                        <AvatarFallback>{comment.user.username[0].toUpperCase()}</AvatarFallback>
+                        <AvatarFallback className="bg-gold-400/5 text-gold-400 text-[10px] font-black">{comment.user.username[0].toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-semibold text-sm">{comment.user.full_name || comment.user.username}</span>
-                          <span className="text-xs text-gray-500">{format(new Date(comment.created_at), 'MMM d')}</span>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-black text-[10px] text-gold-100 uppercase tracking-tighter">{comment.user.full_name || comment.user.username}</span>
+                          <span className="text-[9px] font-bold text-gold-100/20 uppercase tracking-widest">{format(new Date(comment.created_at), 'MMM d')}</span>
                         </div>
-                        <p className="text-sm mt-1 text-gray-800">{comment.content}</p>
+                        <p className="text-xs text-gold-100/60 leading-relaxed">{comment.content}</p>
                       </div>
                     </motion.div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500 text-center italic">No comments yet. Be the first to share your thoughts!</p>
+                  <p className="text-[10px] text-gold-100/20 text-center italic font-bold uppercase tracking-widest py-4">Station silence. Be the first to respond.</p>
                 )}
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 <Textarea
-                  placeholder="Write a comment..."
+                  placeholder="Input response data..."
                   value={commentContent}
                   onChange={(e) => setCommentContent(e.target.value)}
-                  className="min-h-[80px] resize-none focus-visible:ring-green-500"
+                  className="bg-earth-main border-earth-border focus:border-gold-400 text-gold-100 text-xs min-h-[80px] rounded-xl placeholder:text-gold-100/20"
                 />
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setIsCommenting(false)}>
+                <div className="flex justify-end gap-3">
+                  <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest text-gold-100/40" onClick={() => setIsCommenting(false)}>
                     Close
                   </Button>
-                  <Button size="sm" onClick={handleComment} disabled={isSubmitting || !commentContent.trim()}>
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Post Comment'}
+                  <Button 
+                    onClick={handleComment} 
+                    disabled={isSubmitting || !commentContent.trim()}
+                    className="btn-gold px-6 h-9 text-[10px] font-black uppercase tracking-[0.2em]"
+                  >
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Transmit Response'}
                   </Button>
                 </div>
               </div>

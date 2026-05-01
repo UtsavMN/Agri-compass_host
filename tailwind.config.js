@@ -1,6 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ['class'],
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -38,29 +37,23 @@ export default {
           DEFAULT: 'var(--card)',
           foreground: 'var(--card-foreground)',
         },
-        leaf: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
+        gold: {
+          50: '#fdf8ef',
+          100: '#f9edd4',
+          200: '#f2d9a8',
+          300: '#e9c072',
+          400: '#C6A96B',
+          500: '#B8965A',
+          600: '#a07c3f',
+          700: '#856335',
+          800: '#6d5030',
+          900: '#5a4229',
         },
-earth: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
+        earth: {
+          main: '#0E1110',
+          card: '#151A18',
+          elevated: '#1B211F',
+          border: 'rgba(255,255,255,0.06)',
         },
       },
       borderRadius: {
@@ -71,15 +64,11 @@ earth: {
         '2xl': '1.5rem',
       },
       boxShadow: {
-        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'soft-lg': '0 10px 40px -10px rgba(0, 0, 0, 0.1)',
-        'glow': '0 0 20px rgba(34, 197, 94, 0.3)',
-        'xs': 'var(--shadow-xs)',
-        'sm': 'var(--shadow-sm)',
-        'md': 'var(--shadow-md)',
-        'lg': 'var(--shadow-lg)',
-        'xl': 'var(--shadow-xl)',
-        'glow-green': 'var(--shadow-glow)',
+        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.25), 0 10px 20px -2px rgba(0, 0, 0, 0.15)',
+        'soft-lg': '0 10px 40px -10px rgba(0, 0, 0, 0.4)',
+        'premium': '0 10px 30px rgba(0,0,0,0.35)',
+        'gold-glow': '0 6px 20px rgba(198,169,107,0.25)',
+        'xs': '0 1px 2px 0 rgb(0 0 0 / 0.15)',
       },
       keyframes: {
         'accordion-down': {
@@ -115,17 +104,7 @@ earth: {
         'pulse-soft': 'pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'scale-in': 'scale-in 0.2s ease-out',
         'slide-up': 'slideUp 0.5s ease-out',
-        'bounce-gentle': 'bounceGentle 2s infinite',
         'shimmer': 'shimmer 1.5s infinite',
-      },
-      transitionProperty: {
-        'height': 'height',
-        'spacing': 'margin, padding',
-      },
-      transitionDuration: {
-        'fast': 'var(--transition-fast)',
-        'normal': 'var(--transition-normal)',
-        'slow': 'var(--transition-slow)',
       },
     },
   },

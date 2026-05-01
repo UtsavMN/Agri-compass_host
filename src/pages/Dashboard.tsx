@@ -163,12 +163,12 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="space-y-8">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-gradient-gold">
               Welcome back, {profile?.full_name || profile?.username || 'Farmer'}!
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gold-100/60 mt-1">
               {profile?.location
                 ? `Farming from ${profile.location}`
                 : 'Manage your farming activities and stay updated'}
@@ -176,15 +176,15 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-gray-500" />
+            <div className="flex items-center gap-2 bg-earth-elevated px-3 py-1.5 rounded-lg border border-earth-border">
+              <MapPin className="h-4 w-4 text-gold-400" />
               <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-40 bg-transparent border-none focus:ring-0 h-auto p-0 text-sm font-medium text-gold-100 notranslate" translate="no">
                   <SelectValue placeholder="Select district" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-earth-elevated border-earth-border notranslate" translate="no">
                   {districts.sort().map((district) => (
-                    <SelectItem key={district} value={district}>
+                    <SelectItem key={district} value={district} className="text-gold-100 hover:bg-earth-card">
                       {district}
                     </SelectItem>
                   ))}
@@ -200,43 +200,56 @@ export default function Dashboard() {
           <ScrollReveal direction="up" delay={0.1}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Weather Card */}
-              <Card className="card-mobile">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Cloud className="h-5 w-5 mr-2 text-blue-600" />
+              <Card className="card-premium overflow-hidden">
+                <CardHeader className="pb-2 border-b border-earth-border/50">
+                  <CardTitle className="flex items-center text-gold-100">
+                    <Cloud className="h-5 w-5 mr-2 text-gold-400" />
                     Weather in {selectedDistrict}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   {weatherData ? (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Thermometer className="h-4 w-4 text-red-500" />
-                          <span className="text-2xl font-bold">{weatherData.temperature}°C</span>
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-gold-400/10 rounded-xl">
+                            <Thermometer className="h-6 w-6 text-gold-400" />
+                          </div>
+                          <div>
+                            <span className="text-3xl font-bold text-gold-100">{weatherData.temperature}°C</span>
+                            <p className="text-xs text-gold-100/50">Current Temperature</p>
+                          </div>
                         </div>
-                        <Badge variant="secondary">{weatherData.description}</Badge>
+                        <Badge className="bg-gold-400/20 text-gold-400 border-none px-3 py-1">{weatherData.description}</Badge>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Droplets className="h-4 w-4 text-blue-500" />
-                          <span>Humidity: {weatherData.humidity}%</span>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center gap-3 p-3 bg-earth-elevated rounded-xl border border-earth-border">
+                          <Droplets className="h-4 w-4 text-gold-300" />
+                          <div>
+                            <p className="text-xs text-gold-100/50 uppercase tracking-wider font-bold">Humidity</p>
+                            <p className="text-sm font-bold text-gold-100">{weatherData.humidity}%</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Cloud className="h-4 w-4 text-gray-500" />
-                          <span>Wind: {weatherData.windSpeed} km/h</span>
+                        <div className="flex items-center gap-3 p-3 bg-earth-elevated rounded-xl border border-earth-border">
+                          <Cloud className="h-4 w-4 text-gold-300" />
+                          <div>
+                            <p className="text-xs text-gold-100/50 uppercase tracking-wider font-bold">Wind Speed</p>
+                            <p className="text-sm font-bold text-gold-100">{weatherData.windSpeed} km/h</p>
+                          </div>
                         </div>
                       </div>
 
                       <div>
-                        <h4 className="font-semibold mb-2">5-Day Forecast</h4>
-                        <div className="space-y-2">
+                        <h4 className="text-xs font-bold text-gold-100/50 uppercase tracking-widest mb-3">5-Day Forecast</h4>
+                        <div className="space-y-3">
                           {weatherData.forecast.slice(0, 3).map((day, index) => (
-                            <div key={index} className="flex justify-between text-sm">
-                              <span>{new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}</span>
-                              <span>{day.temp_min}° - {day.temp_max}°</span>
-                              <span>{day.description}</span>
+                            <div key={index} className="flex justify-between items-center text-sm p-2 hover:bg-earth-elevated rounded-lg transition-colors">
+                              <span className="font-medium text-gold-100">{new Date(day.date).toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+                              <div className="flex items-center gap-4">
+                                <span className="text-gold-100/70">{day.temp_min}° - {day.temp_max}°</span>
+                                <span className="text-xs bg-earth-elevated px-2 py-0.5 rounded text-gold-300">{day.description}</span>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -249,47 +262,47 @@ export default function Dashboard() {
               </Card>
 
               {/* Crop Recommendations Card */}
-              <Card className="card-mobile">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Leaf className="h-5 w-5 mr-2 text-green-600" />
+              <Card className="card-premium overflow-hidden">
+                <CardHeader className="pb-2 border-b border-earth-border/50">
+                  <CardTitle className="flex items-center text-gold-100">
+                    <Leaf className="h-5 w-5 mr-2 text-gold-400" />
                     Recommended Crops for {selectedDistrict}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   {cropRecommendations.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                       {cropRecommendations.slice(0, 4).map((rec, index) => {
                         const districtInfo = districtData.find(d => d.district === selectedDistrict);
                         const recommendedCrops = districtInfo?.recommended_crops?.split(' / ') || [];
                         const isRecommended = recommendedCrops.includes(rec.cropName);
 
                         return (
-                          <div key={index} className="border rounded-lg p-4 bg-green-50/50">
+                          <div key={index} className="border border-earth-border rounded-xl p-4 bg-earth-elevated hover:border-gold-400/30 transition-all">
                             <div className="flex justify-between items-start mb-3">
-                              <h4 className="font-semibold text-green-800 text-lg">{rec.cropName}</h4>
+                              <h4 className="font-bold text-gold-200 text-lg">{rec.cropName}</h4>
                               <div className="flex gap-2">
-                                {isRecommended && <Badge variant="default" className="bg-green-600">Recommended</Badge>}
-                                <Badge variant="outline">{rec.season}</Badge>
+                                {isRecommended && <Badge className="bg-gold-400 text-earth-main font-bold">Recommended</Badge>}
+                                <Badge variant="outline" className="border-gold-400/30 text-gold-400">{rec.season}</Badge>
                               </div>
                             </div>
-                            <p className="text-sm text-gray-600 mb-2">{rec.reason}</p>
-                            <p className="text-sm text-green-600 font-medium mb-3">Expected: {rec.expectedYield}</p>
+                            <p className="text-sm text-gold-100/60 mb-3 leading-relaxed">{rec.reason}</p>
+                            
+                            <div className="flex items-center gap-2 mb-3 text-xs font-bold text-gold-400 uppercase tracking-wider">
+                              <Zap className="h-3 w-3" />
+                              <span>Expected: {rec.expectedYield}</span>
+                            </div>
 
                             {/* District-specific information from CSV */}
                             {districtInfo && (
-                              <div className="space-y-2 text-sm">
+                              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-earth-border/50 text-[11px]">
                                 <div>
-                                  <span className="font-medium text-gray-700">Soil Type:</span>
-                                  <p className="text-gray-600 mt-1">{districtInfo.soil_type}</p>
+                                  <span className="text-gold-100/40 uppercase tracking-tighter">Soil Type</span>
+                                  <p className="text-gold-100/80 truncate">{districtInfo.soil_type}</p>
                                 </div>
                                 <div>
-                                  <span className="font-medium text-gray-700">Average Rainfall:</span>
-                                  <p className="text-gray-600 mt-1">{districtInfo.avg_rainfall}</p>
-                                </div>
-                                <div>
-                                  <span className="font-medium text-gray-700">Weather Pattern:</span>
-                                  <p className="text-gray-600 mt-1">{districtInfo.weather_pattern}</p>
+                                  <span className="text-gold-100/40 uppercase tracking-tighter">Weather Pattern</span>
+                                  <p className="text-gold-100/80 truncate">{districtInfo.weather_pattern}</p>
                                 </div>
                               </div>
                             )}
@@ -310,7 +323,11 @@ export default function Dashboard() {
 
         <ScrollReveal direction="up" delay={0.2}>
           <div>
-            <h2 className="text-2xl font-bold mb-4">Popular Crops</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gold-100">Popular Crops</h2>
+              <Button variant="ghost" className="text-gold-400 hover:text-gold-300 hover:bg-gold-400/5">View All</Button>
+            </div>
+            
             {loading ? (
               <CropCardShimmer count={6} />
             ) : crops.length > 0 ? (
@@ -319,64 +336,54 @@ export default function Dashboard() {
                   {crops.map((crop) => (
                     <StaggerItem key={crop.id}>
                       <Card
-                        className="card-hover cursor-pointer overflow-hidden group card-mobile border-none shadow-premium bg-white"
+                        className="card-premium group overflow-hidden border-earth-border/50 hover:border-gold-400/30 cursor-pointer"
                         onClick={() => navigate(`/crop/${crop.name.toLowerCase()}`)}
                       >
                         {crop.image_url && (
-                          <div className="h-48 overflow-hidden relative">
+                          <div className="h-44 overflow-hidden relative">
                             <img
                               src={crop.image_url}
                               alt={crop.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                               loading="lazy"
                             />
-                            <div className="absolute top-4 right-4 capitalize">
-                              <Badge className="bg-white/90 text-green-700 hover:bg-white border-none shadow-sm backdrop-blur-sm">
+                            <div className="absolute inset-0 bg-gradient-to-t from-earth-main/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="absolute top-4 right-4">
+                              <Badge className="bg-earth-main/80 text-gold-400 border border-gold-400/20 shadow-sm backdrop-blur-md">
                                 {crop.season || 'Annual'}
                               </Badge>
                             </div>
                           </div>
                         )}
                         <CardHeader className="pb-2">
-                          <CardTitle className="flex justify-between items-center text-xl text-green-800 font-bold">
+                          <CardTitle className="flex justify-between items-center text-xl text-gold-100 font-bold">
                             <div className="flex items-center">
-                              <Leaf className="h-5 w-5 mr-2 text-green-600" />
+                              <Leaf className="h-5 w-5 mr-2 text-gold-400" />
                               {crop.name}
                             </div>
                           </CardTitle>
-                          <CardDescription className="flex items-center text-gray-500 font-medium">
+                          <CardDescription className="text-gold-100/40 text-xs uppercase tracking-widest font-bold">
                             {crop.durationDays ? `${crop.durationDays} Days Duration` : crop.category}
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          {/* Financial Info modeled after the reference image */}
-                          <div className="grid grid-cols-1 gap-3">
-                            <div className="flex flex-col gap-1 p-3 bg-green-50/50 rounded-xl border border-green-100/50">
-                              <div className="text-[10px] uppercase tracking-wider text-green-600 font-bold opacity-80">Investment Required</div>
-                              <div className="text-sm font-bold text-gray-800">
-                                {crop.investmentPerAcre ? `₹${crop.investmentPerAcre.toLocaleString()}` : '₹35,000-45,000'} <span className="text-[10px] text-gray-500 font-normal">per acre</span>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="flex flex-col gap-1 p-3 bg-earth-elevated rounded-xl border border-earth-border group-hover:border-gold-400/20 transition-all">
+                              <div className="text-[10px] uppercase tracking-wider text-gold-100/40 font-bold">Investment</div>
+                              <div className="text-sm font-bold text-gold-200">
+                                {crop.investmentPerAcre ? `₹${crop.investmentPerAcre.toLocaleString()}` : '₹35,000+'}
                               </div>
                             </div>
                             
-                            <div className="flex flex-col gap-1 p-3 bg-emerald-50/50 rounded-xl border border-emerald-100/50">
-                              <div className="text-[10px] uppercase tracking-wider text-emerald-600 font-bold opacity-80">Expected Returns</div>
-                              <div className="text-sm font-bold text-gray-800">
-                                {crop.expectedReturns ? `₹${crop.expectedReturns.toLocaleString()}` : '₹55,000-70,000'} <span className="text-[10px] text-gray-500 font-normal">per acre</span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between px-1">
-                              <div className="flex items-center text-xs text-gray-600">
-                                <Zap className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
-                                <span className="font-semibold">Break-even:</span>
-                              </div>
-                              <div className="text-xs font-bold text-gray-800">
-                                {crop.breakevenMonths ? `${crop.breakevenMonths} Months` : '4 Months'}
+                            <div className="flex flex-col gap-1 p-3 bg-earth-elevated rounded-xl border border-earth-border group-hover:border-gold-400/20 transition-all">
+                              <div className="text-[10px] uppercase tracking-wider text-gold-100/40 font-bold">Returns</div>
+                              <div className="text-sm font-bold text-gold-400">
+                                {crop.expectedReturns ? `₹${crop.expectedReturns.toLocaleString()}` : '₹55,000+'}
                               </div>
                             </div>
                           </div>
 
-                          <Button className="w-full btn-primary bg-green-600 hover:bg-green-700 text-white shadow-soft rounded-lg py-5 transition-all active:scale-[0.98]">
+                          <Button className="w-full btn-gold h-11 transition-all group-hover:shadow-gold-glow">
                             View Detailed Analysis
                           </Button>
                         </CardContent>
@@ -391,87 +398,105 @@ export default function Dashboard() {
           </div>
         </ScrollReveal>
 
-        {/* District-wise Crop Recommendations */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recommended Crops by District</CardTitle>
-            <CardDescription>
-              Overview of recommended crops for all districts in Karnataka
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {districtData.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {districtData.map((district, index) => (
-                  <div key={index} className="border rounded-lg p-4 bg-green-50/50 hover:bg-green-100/50 transition-colors">
-                    <h4 className="font-semibold text-green-800 mb-2">{district.district}</h4>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="font-medium text-gray-700">Recommended Crops:</span>
-                        <p className="text-gray-600">{district.recommended_crops}</p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">Soil Type:</span>
-                        <p className="text-gray-600">{district.soil_type}</p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">Avg Rainfall:</span>
-                        <p className="text-gray-600">{district.avg_rainfall}</p>
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-700">Weather:</span>
-                        <p className="text-gray-600">{district.weather_pattern}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <CardShimmer />
-            )}
-          </CardContent>
-        </Card>
 
-        {/* News Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Latest Agricultural News</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {newsItems.map((news, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm">{news}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
-        <ScrollReveal direction="up" delay={0.3}>
-          <Card className="bg-gradient-to-r from-leaf-500 to-emerald-500 text-white border-none shadow-soft-lg">
-            <CardHeader>
-              <CardTitle className="text-white">Need Help?</CardTitle>
-              <CardDescription className="text-white/90">
-                Our AI assistant and agricultural experts are here to assist you
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* District-wise Crop Recommendations */}
+          <Card className="lg:col-span-2 card-premium">
+            <CardHeader className="border-b border-earth-border/50">
+              <CardTitle className="text-gold-100 flex items-center">
+                <MapPin className="h-5 w-5 mr-2 text-gold-400" />
+                Regional Crop Recommendations
+              </CardTitle>
+              <CardDescription className="text-gold-100/40">
+                Detailed overview for districts in Karnataka
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <Button
-                  variant="secondary"
-                  onClick={() => navigate('/air-agent')}
-                  className="bg-white text-leaf-700 hover:bg-leaf-50 active:scale-95 transition-all duration-200"
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  Ask AI Assistant
-                </Button>
-              </div>
+            <CardContent className="pt-6">
+              {districtData.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                  {districtData.map((district, index) => (
+                    <div key={index} className="border border-earth-border rounded-xl p-4 bg-earth-elevated hover:bg-earth-elevated/80 transition-colors">
+                      <h4 className="font-bold text-gold-400 mb-3 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-gold-400 rounded-full"></span>
+                        {district.district}
+                      </h4>
+                      <div className="space-y-3 text-xs leading-relaxed">
+                        <div>
+                          <span className="text-gold-100/40 uppercase tracking-tighter block mb-1">Recommended Crops</span>
+                          <p className="text-gold-100/80 font-medium">{district.recommended_crops}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-gold-100/40 uppercase tracking-tighter block mb-1">Soil Type</span>
+                            <p className="text-gold-100/80">{district.soil_type}</p>
+                          </div>
+                          <div>
+                            <span className="text-gold-100/40 uppercase tracking-tighter block mb-1">Rainfall</span>
+                            <p className="text-gold-100/80">{district.avg_rainfall}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <CardShimmer />
+              )}
             </CardContent>
           </Card>
-        </ScrollReveal>
+
+          <div className="space-y-8">
+            {/* News Section */}
+            <Card className="card-premium">
+              <CardHeader className="border-b border-earth-border/50">
+                <CardTitle className="text-gold-100 flex items-center">
+                  <FileText className="h-5 w-5 mr-2 text-gold-400" />
+                  Market News
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  {newsItems.map((news, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-earth-elevated/50 rounded-xl border border-earth-border group hover:border-gold-400/20 transition-all cursor-pointer">
+                      <div className="w-1.5 h-1.5 bg-gold-400 rounded-full mt-1.5 flex-shrink-0 group-hover:scale-150 transition-transform"></div>
+                      <p className="text-xs text-gold-100/70 group-hover:text-gold-100 leading-relaxed">{news}</p>
+                    </div>
+                  ))}
+                </div>
+                <Button variant="link" className="w-full text-gold-400 mt-4 text-xs font-bold uppercase tracking-widest">Read More Updates</Button>
+              </CardContent>
+            </Card>
+
+            {/* Help Section */}
+            <ScrollReveal direction="up" delay={0.3}>
+              <Card className="bg-gradient-to-br from-gold-400 to-gold-600 text-earth-main border-none shadow-gold-glow relative overflow-hidden group">
+                <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700">
+                  <Zap size={160} />
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-earth-main font-black">Need Expert Advice?</CardTitle>
+                  <CardDescription className="text-earth-main/70 font-medium">
+                    Our AI assistant and agricultural experts are ready to help you optimize your yield.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={() => navigate('/air-agent')}
+                    className="w-full bg-earth-main text-gold-400 hover:bg-earth-main/90 font-bold rounded-xl h-12 shadow-lg"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Chat with KrishiMitra
+                  </Button>
+                </CardContent>
+              </Card>
+            </ScrollReveal>
+          </div>
+        </div>
       </div>
     </Layout>
   );
 }
+
+// Add a simple MessageSquare icon import if missing from lucide-react above
+import { MessageSquare } from 'lucide-react';

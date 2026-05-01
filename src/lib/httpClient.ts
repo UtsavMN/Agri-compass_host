@@ -7,17 +7,9 @@ async function getAuthHeaders(isFormData = false): Promise<Record<string, string
     headers['Content-Type'] = 'application/json';
   }
 
-  // Get Clerk session token if available
-  try {
-    const clerk = (window as any).Clerk;
-    if (clerk?.session) {
-      const token = await clerk.session.getToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-    }
-  } catch (err) {
-    console.warn('Failed to get auth token:', err);
+  const mockUser = localStorage.getItem('mockUserId');
+  if (mockUser) {
+    headers['X-Mock-User-Id'] = mockUser;
   }
 
   return headers;

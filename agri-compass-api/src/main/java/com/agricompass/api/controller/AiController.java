@@ -41,17 +41,26 @@ public class AiController {
         
         String aiResponseText = null;
         
+        String[] modelNames = {"gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"};
+        
         for (String key : keys) {
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + key.trim();
-            try {
-                Map response = restTemplate.postForObject(url, entity, Map.class);
-                List<Map> candidates = (List<Map>) response.get("candidates");
-                Map content = (Map) candidates.get(0).get("content");
-                List<Map> parts = (List<Map>) content.get("parts");
-                aiResponseText = (String) parts.get(0).get("text");
-                break; // Break loop if request successfully executes
-            } catch (Exception e) {
-                System.err.println("Gemini API request failed for key starting with " + key.substring(0, Math.min(key.length(), 6)) + "... trying next configured token.");
+            if (aiResponseText != null) break;
+            for (String modelName : modelNames) {
+                String url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key.trim();
+                try {
+                    Map response = restTemplate.postForObject(url, entity, Map.class);
+                    if (response != null && response.containsKey("candidates")) {
+                        List<Map> candidates = (List<Map>) response.get("candidates");
+                        if (!candidates.isEmpty()) {
+                            Map content = (Map) candidates.get(0).get("content");
+                            List<Map> parts = (List<Map>) content.get("parts");
+                            aiResponseText = (String) parts.get(0).get("text");
+                            break; // Break inner loop if successful
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Gemini API request failed for model " + modelName + " with key starting with " + key.substring(0, Math.min(key.length(), 6)) + "... trying next.");
+                }
             }
         }
         

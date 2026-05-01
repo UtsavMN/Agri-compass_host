@@ -142,8 +142,8 @@ export default function MarketPrices() {
                   />
                 </div>
                 <Select value={seasonFilter} onValueChange={setSeasonFilter}>
-                  <SelectTrigger><SelectValue placeholder="Filter by season" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="notranslate" translate="no"><SelectValue placeholder="Filter by season" /></SelectTrigger>
+                  <SelectContent className="notranslate" translate="no">
                     <SelectItem value="all">All Seasons</SelectItem>
                     <SelectItem value="kharif">Kharif</SelectItem>
                     <SelectItem value="rabi">Rabi</SelectItem>
@@ -260,8 +260,8 @@ export default function MarketPrices() {
             <ScrollReveal delay={0.1}>
               <div className="flex items-center gap-4 flex-wrap">
                 <Select value={selectedCommodity} onValueChange={setSelectedCommodity}>
-                  <SelectTrigger className="w-48"><SelectValue placeholder="Select commodity" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="w-48 notranslate" translate="no"><SelectValue placeholder="Select commodity" /></SelectTrigger>
+                  <SelectContent className="notranslate" translate="no">
                     {commodities.map(c => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}

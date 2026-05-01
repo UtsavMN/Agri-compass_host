@@ -47,48 +47,50 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-leaf-50 via-blue-50 to-emerald-50 p-4">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
-            <div className="mb-4">
-              <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Something went wrong
-              </h2>
-              <p className="text-gray-600 mb-4">
-                We encountered an unexpected error. Please try refreshing the page.
-              </p>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-earth-main p-4" style={{ background: 'var(--bg-main)' }}>
+        <div className="max-w-md w-full bg-earth-card rounded-2xl shadow-premium p-8 text-center border border-earth-border" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+          <div className="mb-6">
+            <div className="h-16 w-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
-
-            <div className="space-y-3">
-              <Button onClick={this.handleRetry} className="w-full">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/'}
-                className="w-full"
-              >
-                Go Home
-              </Button>
-            </div>
-
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mt-4 text-left">
-                <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
-                  Error Details (Development)
-                </summary>
-                <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
-                  {this.state.error.toString()}
-                  {this.state.errorInfo?.componentStack}
-                </pre>
-              </details>
-            )}
+            <h2 className="text-2xl font-black text-gold-100 tracking-tight mb-2">
+              System Fault Detected
+            </h2>
+            <p className="text-gold-100/40 text-sm font-medium italic mb-6">
+              An unexpected protocol error occurred during asset processing.
+            </p>
           </div>
+
+          <div className="space-y-4">
+            <Button onClick={this.handleRetry} className="btn-gold w-full h-12 shadow-gold-glow">
+              <RefreshCw className="h-4 w-4 mr-3" />
+              Re-initialize Module
+            </Button>
+
+            <Button
+              variant="ghost"
+              onClick={() => window.location.href = '/'}
+              className="w-full text-gold-100/40 hover:text-gold-100"
+            >
+              Return to Relay Base
+            </Button>
+          </div>
+
+          {process.env.NODE_ENV === 'development' && this.state.error && (
+            <details className="mt-8 text-left border-t border-earth-border pt-6">
+              <summary className="cursor-pointer text-[10px] font-black uppercase tracking-widest text-gold-100/20 hover:text-gold-400 transition-colors">
+                Diagnostic Metadata (Dev)
+              </summary>
+              <pre className="mt-4 text-[10px] bg-earth-main p-4 rounded-xl overflow-auto max-h-48 text-red-400/80 border border-red-500/10 font-mono">
+                {this.state.error.toString()}
+                {this.state.errorInfo?.componentStack}
+              </pre>
+            </details>
+          )}
         </div>
-      );
+      </div>
+    );
     }
 
     return this.props.children;
